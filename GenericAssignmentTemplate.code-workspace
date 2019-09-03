@@ -1,9 +1,4 @@
 {
-	"folders": [
-		{
-			"path": "Assignment"
-		}
-	],
 	"settings": {
 		"cSpell.language": "en,en-GB",
 		"cSpell.words": [
@@ -34,4 +29,9 @@
 		},
 		"pandoc.pdfOptString": " -o GenericAssignmentTemplate.pdf  --template template/def.tex --csl=template/harvard-cite-them-right.csl --biblio=references.bib --toc"
 	},
+	"folders": [
+		{
+			"path": "."
+		}
+	],
 }

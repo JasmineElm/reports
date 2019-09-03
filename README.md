@@ -44,7 +44,5 @@ VSCode allows for focussed writing in a way that traditional word processing pac
 + use vscode-pandoc to render the assignment to a pdf, or
   + open the terminal in vscode, and run the compile script `cd Assignment; ./compileReport.sh`
 + Iteratively write the assignment, and push to Github to ensure milestones of progress are not lost
-+ Add research to [Research](Assignment/Research)
-+ move any documents that are no longer required, but should be saved (e.g. illustrator files used to generate images) to [Detritus](Assignment/Detritus)
 
-Note: This repository is intended to be used with an online file sync service (e.g. Dropbox), directories / files not directly required to generate the report (for example `Research/*`) have been added to `.gitignore` and will not be included in the git repository.  Alternatively, these templates could be slotted into a [cookiecutter](https://drivendata.github.io/cookiecutter-data-science/) project under ```Reports```
+Note: This repository is intended to be used  a [cookiecutter](https://drivendata.github.io/cookiecutter-data-science/) project, replacing the blank ```reports``` directory.
