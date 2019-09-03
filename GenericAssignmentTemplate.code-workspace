@@ -1,0 +1,37 @@
+{
+	"folders": [
+		{
+			"path": "Assignment"
+		}
+	],
+	"settings": {
+		"cSpell.language": "en,en-GB",
+		"cSpell.words": [
+			"Lemin"
+		],
+		"todo-tree.rootFolder": "Assignment",
+		"todo-tree.defaultHighlight": {
+			"type": "tag-and-comment",
+			"fontWeight": "900",
+			"fontStyle": "italic",
+			"iconColour": "green"
+		},
+		"todo-tree.customHighlight": {
+			"TODO": {
+				"icon": "check",
+				"type": "whole-line",
+				"foreground": "black",
+				"background": "green",
+				"iconColour": "green"
+			},
+			"FIXME": {
+				"foreground": "red",
+				"background": "black",
+				"type": "whole-line",
+				"icon": "tools",
+				"iconColour": "red"
+			}
+		},
+		"pandoc.pdfOptString": " -o GenericAssignmentTemplate.pdf  --template template/def.tex --csl=template/harvard-cite-them-right.csl --biblio=references.bib --toc"
+	},
+}
