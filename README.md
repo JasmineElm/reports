@@ -47,4 +47,4 @@ VSCode allows for focussed writing in a way that traditional word processing pac
 + Add research to [Research](Assignment/Research)
 + move any documents that are no longer required, but should be saved (e.g. illustrator files used to generate images) to [Detritus](Assignment/Detritus)
 
-Note: This repository is intended to be used with an online file sync service (e.g. Dropbox), directories / files not directly required to generate the report (for example `Research/*`) have been added to `.gitignore` and will not be included in the git repository
+Note: This repository is intended to be used with an online file sync service (e.g. Dropbox), directories / files not directly required to generate the report (for example `Research/*`) have been added to `.gitignore` and will not be included in the git repository.  Alternatively, these templates could be slotted into a [cookiecutter](https://drivendata.github.io/cookiecutter-data-science/) project under ```Reports```
