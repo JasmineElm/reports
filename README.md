@@ -19,6 +19,8 @@ VSCode allows for focussed writing in a way that traditional word processing pac
 
 + Pandoc
 + LaTex-base
++ VS Code
+
 
 ## Suggested plugins
 
@@ -28,6 +30,12 @@ VSCode allows for focussed writing in a way that traditional word processing pac
 + Code Spell Checker
 + Todo Tree
 + Word Count
+
+
+__BUT!!__
+
+all of this can be done in `vi` with much lower overhead.  To that
+end, a [sample vim configuration](example_vimrc) is included.
 
 ## Suggested 3rd party apps
 

@@ -1,0 +1,99 @@
+#!/bin/bash
+
+
+# usage
+usage="usage: $0 [ ${underline}pdf${normal} | word | all ]"
+
+# formatting...
+underline=$(tput smul)
+normal=$(tput sgr0)
+
+### Work out input and output files
+# if just one md file use that, otherwise cat all
+# md files into a temp file that we'll delete later...
+
+
+rndFN() {
+  printf "tmp_"$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w ${1:-8} | head -n 1)".md"
+}
+
+tmp=$(rndFN)
+
+## we don't want to overwrite an existing file...
+while [ -f $tmp ]; do   tmp=$(rndFN); done
+
+count=$(ls -1 *.md 2>/dev/null | wc -l)
+if [ $count = 1 ]
+then 
+  input=$(ls *.md)
+  output=$(basename -- "$input")
+  output=output/"${output%.*}"
+else
+  cat *.md >> $tmp
+  input=$tmp
+  output="output/report"
+fi 
+
+### BUILD ARGUMENTS ###
+#
+# eisvogel template overrides the language param, it needs declaring
+# here not in the meta.yaml ...
+
+buildPDF() {
+  logfile=$output.pdf.log
+  printf "building pdf...\n\tSee $logfile for details\n"
+  pandoc  $input                \
+    --metadata-file=meta.yaml   \
+    -V lang=en-GB               \
+    --biblio=references.bib     \
+		--pdf-engine=xelatex        \
+		--output=$output.pdf        \
+		--template template/def.tex \
+		--highlight-style=zenburn   \
+    --strip-comments            \
+    --csl=template/harvard-cite-them-right.csl > $logfile 2>&1
+  }
+
+buildWORD() {
+  logfile=$output.docx.log
+  printf "building word document...\n\tSee $logfile for details\n"
+  pandoc  $input                  \
+		--biblio=references.bib       \
+		-o $output.docx               \
+		--template template/def.docx  \
+		--highlight-style=zenburn     \
+    --strip-comments              \
+		--csl=template/harvard-cite-them-right.csl > $logfile 2>&1
+}
+
+
+if [ -z $1 ]
+then
+  buildPDF
+elif [ -n $1 ]
+then
+  case $1 in 
+    "pdf")
+      buildPDF
+      ;;
+    "word")
+      buildWORD
+      ;;
+    "all")
+      buildPDF
+      buildWORD
+      ;;
+   "clean")
+     [ "$(ls -A output)" ] &&
+       [ "$(ls -A output)" ] &&
+     rm -v output/* || printf "Already empty: nothing to do\n"
+     ;;
+   *)
+     printf $usage
+     ;;
+ esac
+fi
+# if we used a temp file, remove it.
+if [ -f $tmp ]
+  then rm $tmp
+fi

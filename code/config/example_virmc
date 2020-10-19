@@ -1,0 +1,95 @@
+
+set ffs=unix " assume *nix line endings
+" keep cursor in a reasonable place
+set scrolloff=15
+
+" Gives Vim access to a broader range of colours
+"set termguicolors
+
+" Converts tabs to spaces of width=2
+set expandtab tabstop=2 shiftwidth=2
+
+" cursor can of beyone end of line
+set virtualedit=all
+
+" save file when lose focus
+set autowrite 
+
+" Search & display
+set incsearch smartcase hlsearch showmatch
+
+" SPELLING:
+set spell spelllang=en_gb
+" iabbrev teh the
+inoremap <c-l> <Esc>[s1z=`]<CR>
+" toggle spellcheck highlighting with F5
+map <F5> :call ToggleSpell()<CR> 
+
+" clear spelling highlights by default
+
+hi clear SpellBad
+hi clear Spellcap
+hi clear SpellLocal
+hi clear SpellRare
+
+augroup SpellUnderline
+  autocmd!
+  autocmd ColorScheme * highlight SpellBad   ctermfg=NONE ctermbg=NONE
+  autocmd ColorScheme * highlight SpellCap   ctermfg=NONE ctermbg=NONE
+  autocmd ColorScheme * highlight SpellLocal ctermfg=NONE ctermbg=NONE
+  autocmd ColorScheme * highlight SpellRare  ctermfg=NONE ctermbg=NONE
+augroup END
+
+" FINDNG FILES:
+filetype plugin on
+
+" tab completion on all files
+set path+=**
+set wildmenu wildmode=list:full
+set autochdir
+
+source ~/.vim/local_functions.vim
+
+
+map <silent> <C-E> :call ToggleVExplorer()<CR>
+" set noru nornu nonu " remove cruft
+   
+set rulerformat=%#TabLineSel#\ %{WordCount()}%#Statement#\ %m\ %#VisualNOS#\ %l:%c
+
+" VIM-PANDOC settings
+"
+let g:pandoc#completion#bib#mode 	  = 'citeproc'
+let g:pandoc#biblio#sources 		    = "ybcg"
+let g:pandoc#formatting#textwidth   = 80
+let g:pandoc#formatting#mode 		    = "hA"
+let g:pandoc#folding#level 		      = 2
+let g:pandoc#folding#fdc		        = 0
+
+" LIMELIGHT settings
+"
+let g:limelight_conceal_ctermfg     = 'gray'
+let g:limelight_conceal_guifg       = 'DarkGray'
+let g:limelight_default_coefficient = 0.8
+map <leader>w :Limelight<CR>
+	
+  " turn-on distraction free writing mode for markdown files
+au BufNewFile,BufRead *.{md,mdown,mkd,mkdn,markdown,mdwn} call DistractionFreeWriting()
+
+function! DistractionFreeWriting()
+    :Limelight
+endfunction
+
+" VIM-PLUG
+"
+
+if empty(glob('~/.vim/autoload/plug.vim'))
+  silent !curl -fLo ~/.vim/autoload/plug.vim --create-dirs
+    \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+  autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
+endif
+
+call plug#begin()
+Plug 'https://github.com/vim-pandoc/vim-pandoc'
+Plug 'https://github.com/vim-pandoc/vim-pandoc-syntax'
+Plug 'junegunn/limelight.vim' 
+call plug#end()

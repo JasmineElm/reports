@@ -1,0 +1,26 @@
+
+---
+author: [James Lemin]
+institute: [Change Me]
+title: [I am the title]
+subtitle: [I am the subtitle]
+tags: [comma, separated, values]
+abstract: "Ad incididunt ut reprehenderit eiusmod nisi aliqua sunt dolor et Lorem id. Ea aliqua sit voluptate tempor consequat. Occaecat voluptate elit dolore quis et laborum irure duis in cillum duis aute. In nisi mollit enim id do aliqua. Voluptate reprehenderit laborum consectetur tempor ut id. Qui do aliquip consequat cillum et aute elit."
+keywords: [comma, separated, values]
+pdf-title: [Change Me]
+author-meta: [James Lemin]
+draft: false
+date: [1900/01/01]
+titlepage: true
+toc-own-page: true
+toc-title: [Contents]
+toc-depth: [2]
+lot: True #remove line to not include List of tables
+lof: True #remove line to not include List of figures
+bibliography: [references.bib]
+biblio-title: [References]
+mainfont: TeX Gyre Pagella
+mainfontoptions:
+- Numbers=Lowercase
+- Numbers=Proportional
+---
