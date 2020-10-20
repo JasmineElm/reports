@@ -34,23 +34,26 @@ VSCode allows for focussed writing in a way that traditional word processing pac
 
 __BUT!!__
 
-all of this can be done in `vi` with much lower overhead.  To that
-end, a [sample vim configuration](example_vimrc) is included.
+all of this can be done in `vi` with much lower overhead.  To that end, a
+[sample vim configuration](code/config/example_vimrc) is included.
 
 ## Suggested 3rd party apps
 
 + Zotero
 
-<!-- TODO: I am a TODO -->
-<!-- FIXME: I am a fixme -->
+## Writing
 
-## Usage
++ Write the report in [the code directory](code/)
+  + Single or multiple `*.md` files can be used.
++ Add references to [references.bib](code/references.bib)
++ Add images used in the report to [figures](code/figures)
 
-+ Write the assignment in [report template](Assignment/report.md)
-+ Add references to [references.bib](Assignment/references.bib)
-+ Add images used in the report to [Images](Assignment/Images)
-+ use vscode-pandoc to render the assignment to a pdf, or
-  + open the terminal in vscode, and run the compile script `cd Assignment; ./compileReport.sh`
-+ Iteratively write the assignment, and push to Github to ensure milestones of progress are not lost
+
+## Rendering
+
+want a pdf? `./build`
+Want a word document? `./build docx`
+Want both word and pdf? `./build all`
+Want to remove all the built files and their logs? `build clean`
 
 Note: This repository is intended to be used  a [cookiecutter](https://drivendata.github.io/cookiecutter-data-science/) project, replacing the blank ```reports``` directory.

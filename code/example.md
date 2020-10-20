@@ -49,7 +49,7 @@ split by text
 
 @) work with special syntax
 
-the @same  syntax can be used asa reference elsewhere in the @same document
+don't confuse it with the pandoc-cite syntax (e.g.  @chatfieldchatfield_how_2012 )
 
 
 some useful tests / syntax...
@@ -76,15 +76,13 @@ DefinitionTerm
 
 :   Definition
 
-
 ~~strike through~~
 
 Super^script^
 
 Sub~script~
 
-$tex$ math formulae $f(x) = x^2$ 
-
+$tex$ math formulae $f(x) = x^2$
 
 ![Hello World image](figures/hw.png){height=200px}
 
@@ -100,13 +98,15 @@ pariatur dolor Lorem qui aute tempor. Minim sint in amet dolor fugiat cillum
 proident labore eiusmod mollit elit excepteur ex elit. Duis esse excepteur
 laborum nostrud veniam incididunt anim aliqua proident ea aliquip irure ad. Aute
 consectetur ullamco amet non. Est eiusmod occaecat culpa pariatur eu dolore.
-@spiegelhalter_art_2019. See [here](foo) for more info
-
-
+@botton_seeing_2005. See [here](foo) for more info
 
 \pagebreak
 
 ## References {-}
+
+_Want References to appear somewhere specific?_ `<div id="refs"></div>` will
+sort you out!
+
 
 <div id="refs"></div>
 

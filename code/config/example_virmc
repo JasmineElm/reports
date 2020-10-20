@@ -1,5 +1,6 @@
+" assume *nix line endings
+set ffs=unix 
 
-set ffs=unix " assume *nix line endings
 " keep cursor in a reasonable place
 set scrolloff=15
 
@@ -21,24 +22,6 @@ set incsearch smartcase hlsearch showmatch
 " SPELLING:
 set spell spelllang=en_gb
 " iabbrev teh the
-inoremap <c-l> <Esc>[s1z=`]<CR>
-" toggle spellcheck highlighting with F5
-map <F5> :call ToggleSpell()<CR> 
-
-" clear spelling highlights by default
-
-hi clear SpellBad
-hi clear Spellcap
-hi clear SpellLocal
-hi clear SpellRare
-
-augroup SpellUnderline
-  autocmd!
-  autocmd ColorScheme * highlight SpellBad   ctermfg=NONE ctermbg=NONE
-  autocmd ColorScheme * highlight SpellCap   ctermfg=NONE ctermbg=NONE
-  autocmd ColorScheme * highlight SpellLocal ctermfg=NONE ctermbg=NONE
-  autocmd ColorScheme * highlight SpellRare  ctermfg=NONE ctermbg=NONE
-augroup END
 
 " FINDNG FILES:
 filetype plugin on
@@ -48,12 +31,6 @@ set path+=**
 set wildmenu wildmode=list:full
 set autochdir
 
-source ~/.vim/local_functions.vim
-
-
-map <silent> <C-E> :call ToggleVExplorer()<CR>
-" set noru nornu nonu " remove cruft
-   
 set rulerformat=%#TabLineSel#\ %{WordCount()}%#Statement#\ %m\ %#VisualNOS#\ %l:%c
 
 " VIM-PANDOC settings
@@ -81,6 +58,7 @@ endfunction
 
 " VIM-PLUG
 "
+" remove this block if not on *nix platforms - 
 
 if empty(glob('~/.vim/autoload/plug.vim'))
   silent !curl -fLo ~/.vim/autoload/plug.vim --create-dirs
