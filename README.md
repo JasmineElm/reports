@@ -1,44 +1,7 @@
 # Generic Assignment Template
 
-This is a generic assignment template that allows academic documents to be written easily in Visual Studio Code
+This repo contains my tools to make writing an academic document a little easier.
 
-## Why?
-
-VSCode allows for focussed writing in a way that traditional word processing packages arguably don't:
-
-+ Markdown syntax is faster and less ambiguous
-+ Zen Mode
-+ Customisable editor colours
-+ Syntax highlighting makes structuring more obvious
-+ a corrupt Markdown file is easier to read/recover than a `docx`
-+ managing thoughts and ideas is easy with `TODO`s
-+ formatting can be done using external packages ensuring professional looking results with minimal effort
-+ Plugins can manage spell-checking, referencing and so on.
-
-## Prerequisites
-
-+ Pandoc
-+ LaTex-base
-+ VS Code
-
-
-## Suggested plugins
-
-+ Markdown All in One
-+ vscode-pandoc
-+ Pandoc Citer
-+ Code Spell Checker
-+ Todo Tree
-+ Word Count
-
-
-__BUT!!__
-
-all of this can be done in `vi` with much lower overhead.  To that end, a minimal `.vimrc` is included.  There's a wealth of information around why you'd use vim, not least[here](https://www.naperwrimo.org/wiki/index.php?title=Vim_for_Writers)
-
-## Suggested 3rd party apps
-
-+ Zotero
 
 ## Writing
 
@@ -55,4 +18,10 @@ Want a word document? `./build docx`
 Want both word and pdf? `./build all`
 Want to remove all the built files and their logs? `build clean`
 
-Note: This repository is intended to be used  a [cookiecutter](https://drivendata.github.io/cookiecutter-data-science/) project, replacing the blank ```reports``` directory.
+
+## Suggested 3rd party apps
+
++ Zotero
++ Cookiecutter
+
+_Note:_ You may want to drop this rep into a [cookiecutter](https://drivendata.github.io/cookiecutter-data-science/) project, replacing the blank ```reports``` directory.
