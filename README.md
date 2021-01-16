@@ -34,8 +34,7 @@ VSCode allows for focussed writing in a way that traditional word processing pac
 
 __BUT!!__
 
-all of this can be done in `vi` with much lower overhead.  To that end, a
-[sample vim configuration](code/config/example_vimrc) is included.
+all of this can be done in `vi` with much lower overhead.  To that end, a minimal `.vimrc` is included.  There's a wealth of information around why you'd use vim, not least[here](https://www.naperwrimo.org/wiki/index.php?title=Vim_for_Writers)
 
 ## Suggested 3rd party apps
 

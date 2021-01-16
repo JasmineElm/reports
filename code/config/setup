@@ -1,7 +1,14 @@
 #!/bin/sh
 
-# grab a copy of a suitable template, and save it as "def.tex
 cd ../template
+# remove any user defined csl/tex files, and use sensible defults from git repos...
+rm *.csl
+rm *.tex
+
 curl -o def.tex https://raw.githubusercontent.com/Wandmalfarbe/pandoc-latex-template/master/eisvogel.tex
-# grab the correct csl template...
-curl -O https://raw.githubusercontent.com/citation-style-language/styles/master/harvard-cite-them-right.csl
+
+## Definitive Harvard style...
+# curl -o def.csl https://raw.githubusercontent.com/citation-style-language/styles/master/harvard-cite-them-right.csl
+
+## use the OU Harvard style instead...
+curl -o def.csl https://raw.githubusercontent.com/citation-style-language/styles/master/the-open-university-harvard.csl

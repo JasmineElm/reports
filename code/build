@@ -51,7 +51,7 @@ buildPDF() {
 		--template template/def.tex \
 		--highlight-style=zenburn   \
     --strip-comments            \
-    --csl=template/harvard-cite-them-right.csl > $logfile 2>&1
+    --csl=template/def.csl > $logfile 2>&1
   }
 
 buildWORD() {
@@ -63,7 +63,7 @@ buildWORD() {
 		--template template/def.docx  \
 		--highlight-style=zenburn     \
     --strip-comments              \
-		--csl=template/harvard-cite-them-right.csl > $logfile 2>&1
+		--csl=template/def.csl > $logfile 2>&1
 }
 
 
@@ -76,6 +76,9 @@ then
     "pdf")
       buildPDF
       ;;
+    "silent")
+      buildPDF > /dev/null
+      ;; 
     "word")
       buildWORD
       ;;
