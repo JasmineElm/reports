@@ -8,30 +8,53 @@ usage="usage: $0 [ ${underline}pdf${normal} | word | all ]"
 underline=$(tput smul)
 normal=$(tput sgr0)
 
+# Filename.  
+# We assume that the parent dir is relevant e.g.
+# parent dir = "Book"
+# child dir = "Chapter"
+# Filename = "Book_-_Chapter"
+
+fpathToFN() {
+  DIRNAME=$(pwd)
+  base1="${DIRNAME##*/}"
+  dir1="${DIRNAME%/*}"
+  echo "${dir1##*/} - $base1"| sed 's/ /_/g'
+}
+
 ### Work out input and output files
 # if just one md file use that, otherwise cat all
 # md files into a temp file that we'll delete later...
 
 
-rndFN() {
-  printf "tmp_"$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w ${1:-8} | head -n 1)".md"
+function rndFN {
+    # stolen from https://stackoverflow.com/questions/32484504/using-random-to-generate-a-random-string-in-bash
+    # Return random alpha-numeric string of given LENGTH
+    #
+    # Usage: VALUE=$(rand-str $LENGTH)
+    #    or: VALUE=$(rand-str)
+
+    local DEFAULT_LENGTH=64
+    local LENGTH=${1:-$DEFAULT_LENGTH}
+
+    tr -dc A-Za-z0-9 </dev/urandom | head -c "$LENGTH"
+    # -dc: delete complementary set == delete all except given set
 }
 
 tmp=$(rndFN)
 
 ## we don't want to overwrite an existing file...
-while [ -f $tmp ]; do   tmp=$(rndFN); done
+while [ -f "$tmp" ]; do   tmp=$(rndFN 8); done
 
-count=$(ls -1 *.md 2>/dev/null | wc -l)
-if [ $count = 1 ]
+count=$(find . -type f -iname "*.md" 2>/dev/null | wc -l)
+if [ "$count" = 1 ]
 then 
-  input=$(ls *.md)
+  input=$(find . -type f -iname "*.md")
   output=$(basename -- "$input")
   output=output/"${output%.*}"
 else
-  cat *.md >> $tmp
+  cat $(find . -iname "*.md" -exec echo "{}" \; | sort) >>"$tmp"
   input=$tmp
-  output="output/report"
+  output="output/$(fpathToFN)"
 fi 
 
 ### BUILD ARGUMENTS ###
@@ -41,38 +64,40 @@ fi
 
 buildPDF() {
   logfile=$output.pdf.log
-  printf "building pdf...\n\tSee $logfile for details\n"
-  pandoc  $input                \
+  printf "%sbuilding pdf...\n\tSee $logfile for details\n"
+  pandoc  "$input"              \
     --metadata-file=meta.yaml   \
     -V lang=en-GB               \
     --biblio=references.bib     \
+    --verbose                   \
 		--pdf-engine=xelatex        \
-		--output=$output.pdf        \
+		--output="$output".pdf      \
 		--template template/def.tex \
 		--highlight-style=zenburn   \
     --strip-comments            \
-    --csl=template/def.csl > $logfile 2>&1
+    --csl=template/def.csl > "$logfile" 2>&1
   }
 
 buildWORD() {
   logfile=$output.docx.log
-  printf "building word document...\n\tSee $logfile for details\n"
-  pandoc  $input                  \
-		--biblio=references.bib       \
-		-o $output.docx               \
-		--template template/def.docx  \
-		--highlight-style=zenburn     \
-    --strip-comments              \
-		--csl=template/def.csl > $logfile 2>&1
+  printf "%sbuilding word document...\n\tSee $logfile for details\n"
+  pandoc  "$input"               \
+		--biblio=references.bib      \
+    --verbose                    \
+		-o "$output".docx            \
+		--template template/def.docx \
+		--highlight-style=zenburn    \
+    --strip-comments             \
+		--csl=template/def.csl > "$logfile" 2>&1
 }
 
 
-if [ -z $1 ]
+if [[ -z "$1" ]]
 then
   buildPDF
-elif [ -n $1 ]
+elif [[ -n "$1" ]]
 then
-  case $1 in 
+  case "$1" in 
     "pdf")
       buildPDF
       ;;
@@ -92,11 +117,11 @@ then
      rm -v output/* || printf "Already empty: nothing to do\n"
      ;;
    *)
-     printf $usage
+     printf "%s$usage"
      ;;
  esac
 fi
 # if we used a temp file, remove it.
-if [ -f $tmp ]
-  then rm $tmp
+if [ -f "$tmp" ]
+  then rm "$tmp"
 fi
