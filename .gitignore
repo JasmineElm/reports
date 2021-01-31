@@ -1,2 +1,5 @@
 *.tex
 *.log
+*.swp
+*.tmp
+*.csl

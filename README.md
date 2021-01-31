@@ -13,10 +13,18 @@ This repo contains my tools to make writing an academic document a little easier
 
 ## Rendering
 
-want a pdf? `./build`
-Want a word document? `./build docx`
-Want both word and pdf? `./build all`
-Want to remove all the built files and their logs? `build clean`
+```bash 
+Simplifies building pdf / word documents 
+
+Usage:
+  build [cpwh]
+
+Options:
+  -h    Show this screen.
+  -c    clear the output directory
+  -p    build pdf
+  -w    build word
+```
 
 
 ## Suggested 3rd party apps

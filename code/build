@@ -1,12 +1,19 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
+######  STRICT MODE  ###########################################
 
-# usage
-usage="usage: $0 [ ${underline}pdf${normal} | word | all ]"
+# set -u
+# set -e
+# trap 'echo "Aborting due to errexit on line $LINENO. Exit code: $?" >&2' ERR
+# set -o errtrace
+# set -o pipefail
+# IFS=$'\n\t'
 
-# formatting...
-underline=$(tput smul)
-normal=$(tput sgr0)
+######  VARIABLES    ###########################################
+
+_ME="$(basename "${0}")"
+
+######  FUNCTIONS    ###########################################
 
 # Filename.  
 # We assume that the parent dir is relevant e.g.
@@ -14,7 +21,7 @@ normal=$(tput sgr0)
 # child dir = "Chapter"
 # Filename = "Book_-_Chapter"
 
-fpathToFN() {
+_fpathToFN() {
   DIRNAME=$(pwd)
   base1="${DIRNAME##*/}"
   dir1="${DIRNAME%/*}"
@@ -26,45 +33,63 @@ fpathToFN() {
 # md files into a temp file that we'll delete later...
 
 
-function rndFN {
+function _rndFN {
     # stolen from https://stackoverflow.com/questions/32484504/using-random-to-generate-a-random-string-in-bash
-    # Return random alpha-numeric string of given LENGTH
-    #
-    # Usage: VALUE=$(rand-str $LENGTH)
-    #    or: VALUE=$(rand-str)
-
     local DEFAULT_LENGTH=64
     local LENGTH=${1:-$DEFAULT_LENGTH}
-
     tr -dc A-Za-z0-9 </dev/urandom | head -c "$LENGTH"
-    # -dc: delete complementary set == delete all except given set
 }
 
-tmp=$(rndFN)
+_tmpFileName() {
+    tmp=$(_rndFN)
+    ## we don't want to overwrite an existing file...
+    while [ -f "$tmp" ]
+      do   tmp=$(_rndFN 8)
+    done
+    printf "%s$tmp"
+}
 
-## we don't want to overwrite an existing file...
-while [ -f "$tmp" ]; do   tmp=$(rndFN 8); done
+_inputName() {
+    count=$(find . -type f -iname "*.md" 2>/dev/null | wc -l)
+    if [ "$count" = 1 ]
+    then 
+      input=$(find . -type f -iname "*.md")
+    else
+      tmp=$(_tmpFileName)
+      cat $(find . -iname "*.md" -exec echo "{}" \; | sort) >>"$tmp.tmp"
+      input="$tmp.tmp"
+    fi
+   printf "%s$input" 
+}
 
-count=$(find . -type f -iname "*.md" 2>/dev/null | wc -l)
-if [ "$count" = 1 ]
-then 
-  input=$(find . -type f -iname "*.md")
-  output=$(basename -- "$input")
-  output=output/"${output%.*}"
-else
-  cat $(find . -iname "*.md" -exec echo "{}" \; | sort) >>"$tmp"
-  input=$tmp
-  output="output/$(fpathToFN)"
-fi 
+_catInput() {
+  true
+}
 
+_outputName() {
+     count=$(find . -type f -iname "*.md" 2>/dev/null | wc -l)
+    if [ "$count" = 1 ]
+    then
+      input=$(find . -type f -iname "*.md")
+      output=$(basename -- "$input")
+      output=output/"${output%.*}"
+    else
+      output="output/$(_fpathToFN)"
+    fi
+   printf "%s$output" 
+
+
+}
 ### BUILD ARGUMENTS ###
 #
-# eisvogel template overrides the language param, it needs declaring
-# here not in the meta.yaml ...
+# some tex templates override the language param
+# declare here not in the meta.yaml to be safe
 
-buildPDF() {
+_buildPDF() {
+  input=$(_inputName)
+  output=$(_outputName)
   logfile=$output.pdf.log
-  printf "%sbuilding pdf...\n\tSee $logfile for details\n"
+  printf "%sbuilding pdf...\\n  See $logfile for details\\n"
   pandoc  "$input"              \
     --metadata-file=meta.yaml   \
     -V lang=en-GB               \
@@ -78,9 +103,11 @@ buildPDF() {
     --csl=template/def.csl > "$logfile" 2>&1
   }
 
-buildWORD() {
+_buildDocx() {
+  input=$(_inputName)
+  output=$(_outputName)
   logfile=$output.docx.log
-  printf "%sbuilding word document...\n\tSee $logfile for details\n"
+  printf "%sbuilding word document...\\n  See $logfile for details\\n"
   pandoc  "$input"               \
 		--biblio=references.bib      \
     --verbose                    \
@@ -91,37 +118,62 @@ buildWORD() {
 		--csl=template/def.csl > "$logfile" 2>&1
 }
 
-
-if [[ -z "$1" ]]
-then
-  buildPDF
-elif [[ -n "$1" ]]
-then
-  case "$1" in 
-    "pdf")
-      buildPDF
-      ;;
-    "silent")
-      buildPDF > /dev/null
-      ;; 
-    "word")
-      buildWORD
-      ;;
-    "all")
-      buildPDF
-      buildWORD
-      ;;
-   "clean")
-     [ "$(ls -A output)" ] &&
+_clean() {
+       [ "$(ls -A output)" ] &&
        [ "$(ls -A output)" ] &&
      rm -v output/* || printf "Already empty: nothing to do\n"
-     ;;
-   *)
-     printf "%s$usage"
-     ;;
- esac
-fi
-# if we used a temp file, remove it.
-if [ -f "$tmp" ]
-  then rm "$tmp"
-fi
+}
+
+_tidy() {
+  # if we used a temp file, remove it.
+  find . -type f -iname "*.tmp" -delete 
+}
+
+_print_help() {
+  cat <<HEREDOC
+Simplifies building pdf / word documents 
+
+Usage:
+  ${_ME} [cpwh]
+
+Options:
+  -h    Show this screen.
+  -c    clear the output directory
+  -p    build pdf
+  -w    build word
+
+HEREDOC
+}
+
+######  MAIN         ###########################################  
+
+_main() {
+    if [[ -z "$*" ]]
+        then 
+          _buildPDF
+    fi
+    while getopts ":cpwh" opt; do
+        case $opt in
+            \?)
+            echo "Invalid option: -$OPTARG" >&2
+            return
+            ;;
+            c)
+            _clean
+            return
+            ;;
+            p)
+            _buildPDF
+            ;;
+            w)
+            _buildDocx
+            ;;
+            h)
+            _print_help
+            return
+            ;;
+        esac
+    done
+    _tidy
+}
+_main "$@"
