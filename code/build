@@ -2,16 +2,21 @@
 
 ######  STRICT MODE  ###########################################
 
-# set -u
-# set -e
-# trap 'echo "Aborting due to errexit on line $LINENO. Exit code: $?" >&2' ERR
-# set -o errtrace
-# set -o pipefail
-# IFS=$'\n\t'
+set -u
+set -e
+# trap "echo ""Aborting due to errexit on line $LINENO. Exit code: $?"" >&2" ERR
+set -o errtrace
+set -o pipefail
+IFS=$'\n\t'
 
 ######  VARIABLES    ###########################################
 
 _ME="$(basename "${0}")"
+_OUTDIR='output/'
+
+# formatting
+bold=$(tput bold)
+normal=$(tput sgr0)
 
 ######  FUNCTIONS    ###########################################
 
@@ -32,10 +37,9 @@ _fpathToFN() {
 # if just one md file use that, otherwise cat all
 # md files into a temp file that we'll delete later...
 
-
 function _rndFN {
     # stolen from https://stackoverflow.com/questions/32484504/using-random-to-generate-a-random-string-in-bash
-    local DEFAULT_LENGTH=64
+    local DEFAULT_LENGTH=8
     local LENGTH=${1:-$DEFAULT_LENGTH}
     tr -dc A-Za-z0-9 </dev/urandom | head -c "$LENGTH"
 }
@@ -62,10 +66,6 @@ _inputName() {
    printf "%s$input" 
 }
 
-_catInput() {
-  true
-}
-
 _outputName() {
      count=$(find . -type f -iname "*.md" 2>/dev/null | wc -l)
     if [ "$count" = 1 ]
@@ -74,55 +74,57 @@ _outputName() {
       output=$(basename -- "$input")
       output=output/"${output%.*}"
     else
-      output="output/$(_fpathToFN)"
+      output="$(_fpathToFN)"
     fi
    printf "%s$output" 
-
-
 }
+
 ### BUILD ARGUMENTS ###
 #
 # some tex templates override the language param
 # declare here not in the meta.yaml to be safe
 
 _buildPDF() {
-  input=$(_inputName)
-  output=$(_outputName)
   logfile=$output.pdf.log
-  printf "%sbuilding pdf...\\n  See $logfile for details\\n"
+  if [[ $s -eq 0 ]]; then
+    printf "%sbuilding pdf...\\n  See $logfile for details\\n"
+  fi
   pandoc  "$input"              \
     --metadata-file=meta.yaml   \
     -V lang=en-GB               \
     --biblio=references.bib     \
     --verbose                   \
 		--pdf-engine=xelatex        \
-		--output="$output".pdf      \
+		-o "$_OUTDIR$output".pdf    \
 		--template template/def.tex \
 		--highlight-style=zenburn   \
     --strip-comments            \
-    --csl=template/def.csl > "$logfile" 2>&1
+    --csl=template/def.csl > "$_OUTDIR$logfile" 2>&1
   }
 
 _buildDocx() {
-  input=$(_inputName)
-  output=$(_outputName)
   logfile=$output.docx.log
-  printf "%sbuilding word document...\\n  See $logfile for details\\n"
+  if [[ $s -eq 0 ]]; then
+    printf "%sbuilding word doc...\\n  See $logfile for details\\n"
+  fi
   pandoc  "$input"               \
 		--biblio=references.bib      \
     --verbose                    \
-		-o "$output".docx            \
+		-o "$_OUTDIR$output".docx            \
 		--template template/def.docx \
 		--highlight-style=zenburn    \
     --strip-comments             \
-		--csl=template/def.csl > "$logfile" 2>&1
+		--csl=template/def.csl > "$_OUTDIR$logfile" 2>&1
+}
+
+_rmlogs() {
+  [ "$(find output/ -type f -iname '*.log')" ] && find output/ -type f -iname '*.log' -delete || printf "Already empty: nothing to do\n"
 }
 
 _clean() {
-       [ "$(ls -A output)" ] &&
-       [ "$(ls -A output)" ] &&
-     rm -v output/* || printf "Already empty: nothing to do\n"
+      [ "$(ls -A output)" ] &&  rm -v output/* || printf "Already empty: nothing to do\n"
 }
+
 
 _tidy() {
   # if we used a temp file, remove it.
@@ -134,46 +136,99 @@ _print_help() {
 Simplifies building pdf / word documents 
 
 Usage:
-  ${_ME} [cpwh]
+  ${_ME} [BUILD OPTIONS] [-o | --output [FILENAME]]
 
-Options:
-  -h    Show this screen.
-  -c    clear the output directory
-  -p    build pdf
-  -w    build word
+Build Options:
+  ${bold}-h | --help${normal}   Show this screen.
+  ${bold}-p | --pdf${normal}    build pdf
+  ${bold}-w | --word${normal}   build docx
+  ${bold}-c | --clean${normal}  clear the output directory
+  ${bold}-s | --silent${normal} remove any logs created
 
+  ${bold}-o | --output${normal} specifiy an output file name
 HEREDOC
 }
 
-######  MAIN         ###########################################  
+###### OPTION PARSING ##########################################  
 
-_main() {
-    if [[ -z "$*" ]]
-        then 
-          _buildPDF
-    fi
-    while getopts ":cpwh" opt; do
-        case $opt in
-            \?)
-            echo "Invalid option: -$OPTARG" >&2
-            return
-            ;;
-            c)
-            _clean
-            return
-            ;;
-            p)
-            _buildPDF
-            ;;
-            w)
-            _buildDocx
-            ;;
-            h)
-            _print_help
-            return
-            ;;
-        esac
-    done
-    _tidy
+OPTIONS=hpwco:s
+LONGOPTS=help,pdf,word,clean,output:,silent
+
+# -regarding ! and PIPESTATUS see above
+# -temporarily store output to be able to check for errors
+# -activate quoting/enhanced mode (e.g. by writing out “--options”)
+# -pass arguments only via   -- "$@"   to separate them correctly
+! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
+if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
+    # e.g. return value is 1
+    #  then getopt has complained about wrong arguments to stdout
+    exit 2
+fi
+# read getopt’s output this way to handle the quoting right:
+eval set -- "$PARSED"
+
+c=0 # clean up
+p=0 # create pdf
+w=0 # create word
+s=0 # silent
+h=0 # need help?
+output=$(_outputName)
+input=$(_inputName)
+
+if [ "$1" == '--' ]; then
+    ## no options passed = help message
+    h=1
+else
+  while true; do
+      case "$1" in
+          -p|--pdf)
+              p=1
+              shift
+              ;;
+          -w|--word)
+              w=1
+              shift
+              ;;
+          -c|--clean)
+              c=1
+              shift
+              ;;
+          -s|--silent)
+              s=1
+              shift
+              ;;
+          -h|--help)
+              h=1
+              shift
+              ;;
+          -o|--output)
+              output="$2"
+              shift 2
+              ;;
+          --)
+              shift
+              break
+              ;;
+          *)
+              echo "unrecognised flag."
+              h=1
+              ;;
+      esac
+  done 
+fi
+
+main() {
+  if [[ $h -eq 1 ]]; then
+  # print help and nothing else...
+  _print_help
+  else
+    if [[ $c -eq 1 ]]; then _clean;  exit; fi
+    if [[ $p -eq 1 ]]; then _buildPDF; fi
+    if [[ $w -eq 1 ]]; then _buildDocx; fi
+    if [[ $s -eq 1 ]]; then _rmlogs; fi
+  fi
+_tidy
 }
-_main "$@"
+
+main
+
