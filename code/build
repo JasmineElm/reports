@@ -54,6 +54,7 @@ _tmpFileName() {
 }
 
 _inputName() {
+    # cat all md files
     count=$(find . -type f -iname "*.md" 2>/dev/null | wc -l)
     if [ "$count" = 1 ]
     then 
@@ -72,7 +73,7 @@ _outputName() {
     then
       input=$(find . -type f -iname "*.md")
       output=$(basename -- "$input")
-      output=output/"${output%.*}"
+      output="${output%.*}"
     else
       output="$(_fpathToFN)"
     fi
@@ -124,7 +125,6 @@ _rmlogs() {
 _clean() {
       [ "$(ls -A output)" ] &&  rm -v output/* || printf "Already empty: nothing to do\n"
 }
-
 
 _tidy() {
   # if we used a temp file, remove it.
@@ -218,6 +218,7 @@ else
 fi
 
 main() {
+  trap _tidy EXIT
   if [[ $h -eq 1 ]]; then
   # print help and nothing else...
   _print_help
@@ -227,7 +228,6 @@ main() {
     if [[ $w -eq 1 ]]; then _buildDocx; fi
     if [[ $s -eq 1 ]]; then _rmlogs; fi
   fi
-_tidy
 }
 
 main
