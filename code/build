@@ -145,7 +145,7 @@ Build Options:
   ${bold}-c | --clean${normal}  clear the output directory
   ${bold}-s | --silent${normal} remove any logs created
 
-  ${bold}-o | --output${normal} specifiy an output file name
+  ${bold}-o | --output${normal} specify an output file name
 HEREDOC
 }
 
