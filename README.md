@@ -2,7 +2,6 @@
 
 This repo contains my tools to make writing an academic document a little easier.
 
-
 ## Writing
 
 + Write the report in [the code directory](code/)
@@ -10,26 +9,26 @@ This repo contains my tools to make writing an academic document a little easier
 + Add references to [references.bib](code/references.bib)
 + Add images used in the report to [figures](code/figures)
 
-
 ## Rendering
 
-```bash 
+```text
 Simplifies building pdf / word documents 
 
 Usage:
-  build [cpwh]
+  ${_ME} [BUILD OPTIONS] [-o | --output [FILENAME]]
 
-Options:
-  -h    Show this screen.
-  -c    clear the output directory
-  -p    build pdf
-  -w    build word
+Build Options:
+  -h | --help   Show this screen.
+  -p | --pdf    build pdf
+  -w | --word   build docx
+  -c | --clean  clear the output directory
+  -s | --silent remove any logs created
+  -o | --output specify an output file name
 ```
-
 
 ## Suggested 3rd party apps
 
-+ Zotero
-+ Cookiecutter
++ [Zotero](https://www.zotero.org)
++ [cookiecutter](https://drivendata.github.io/cookiecutter-data-science/)
 
 _Note:_ You may want to drop this rep into a [cookiecutter](https://drivendata.github.io/cookiecutter-data-science/) project, replacing the blank ```reports``` directory.

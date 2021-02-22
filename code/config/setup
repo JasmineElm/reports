@@ -1,10 +1,12 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-cd ../template
+cd ../template || exit
+
 # remove any user defined csl/tex files, and use sensible defults from git repos...
-rm *.csl
-rm *.tex
+rm "*.csl"
+rm "*.tex"
 
+# eisvogel template is perfect to demonstrate the script
 curl -o def.tex https://raw.githubusercontent.com/Wandmalfarbe/pandoc-latex-template/master/eisvogel.tex
 
 ## Definitive Harvard style...

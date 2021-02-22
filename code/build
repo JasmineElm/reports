@@ -4,7 +4,6 @@
 
 set -u
 set -e
-# trap "echo ""Aborting due to errexit on line $LINENO. Exit code: $?"" >&2" ERR
 set -o errtrace
 set -o pipefail
 IFS=$'\n\t'
@@ -20,64 +19,44 @@ normal=$(tput sgr0)
 
 ######  FUNCTIONS    ###########################################
 
-# Filename.  
-# We assume that the parent dir is relevant e.g.
-# parent dir = "Book"
-# child dir = "Chapter"
-# Filename = "Book_-_Chapter"
+# Filename (IN ORDER)
+# if single file   - that's our name
+# if multiple file - use "report"
+# if specified in meta.yaml, use that
 
-_fpathToFN() {
-  DIRNAME=$(pwd)
-  base1="${DIRNAME##*/}"
-  dir1="${DIRNAME%/*}"
-  echo "${dir1##*/} - $base1"| sed 's/ /_/g'
+_countMarkdown() {
+  find . -name "*.md" -type f | wc -l
 }
 
-### Work out input and output files
-# if just one md file use that, otherwise cat all
-# md files into a temp file that we'll delete later...
-
-function _rndFN {
-    # stolen from https://stackoverflow.com/questions/32484504/using-random-to-generate-a-random-string-in-bash
-    local DEFAULT_LENGTH=8
-    local LENGTH=${1:-$DEFAULT_LENGTH}
-    tr -dc A-Za-z0-9 </dev/urandom | head -c "$LENGTH"
+_outFNFromMD() {
+  input=$(find . -type f -iname "*.md")
+  output=$(basename -- "$input")
+  echo "${output%.*}"
 }
 
-_tmpFileName() {
-    tmp=$(_rndFN)
-    ## we don't want to overwrite an existing file...
-    while [ -f "$tmp" ]
-      do   tmp=$(_rndFN 8)
-    done
-    printf "%s$tmp"
+_yamlLineMatches() {
+  grep -c "pdf-title" meta.yaml
 }
 
-_inputName() {
-    # cat all md files
-    count=$(find . -type f -iname "*.md" 2>/dev/null | wc -l)
-    if [ "$count" = 1 ]
-    then 
-      input=$(find . -type f -iname "*.md")
-    else
-      tmp=$(_tmpFileName)
-      cat $(find . -iname "*.md" -exec echo "{}" \; | sort) >>"$tmp.tmp"
-      input="$tmp.tmp"
-    fi
-   printf "%s$input" 
+_outFNFromYaml(){
+  grep "pdf-title" meta.yaml | sed 's/pdf-title://;s/^[ \t]*//;s/[ \t]*$//;s/[][]//g;s/[^A-Za-z0-9.-]/_/g'
 }
 
-_outputName() {
-     count=$(find . -type f -iname "*.md" 2>/dev/null | wc -l)
-    if [ "$count" = 1 ]
-    then
-      input=$(find . -type f -iname "*.md")
-      output=$(basename -- "$input")
-      output="${output%.*}"
-    else
-      output="$(_fpathToFN)"
-    fi
-   printf "%s$output" 
+_outputFileName() {
+  outFile='report'
+  if [[ $(_countMarkdown) -eq 1 ]]; then
+    outFile=$(_outFNFromMD)
+  fi
+  if [[ $(_yamlLineMatches) -eq 1 ]]; then
+    outFile=$(_outFNFromYaml)
+  fi
+  printf "%s$outFile"
+}
+
+_makeInputFile() {
+  rm -rf .tmp && mkdir .tmp
+  tmpfile=$(date +%s).md
+  cat $(find . -iname "*.md" -exec echo "{}" \; | sort) >>".tmp/$tmpfile"
 }
 
 ### BUILD ARGUMENTS ###
@@ -85,12 +64,14 @@ _outputName() {
 # some tex templates override the language param
 # declare here not in the meta.yaml to be safe
 
+output=$(_outputFileName)
+
 _buildPDF() {
   logfile=$output.pdf.log
   if [[ $s -eq 0 ]]; then
     printf "%sbuilding pdf...\\n  See $logfile for details\\n"
   fi
-  pandoc  "$input"              \
+  pandoc  .tmp/*.md             \
     --metadata-file=meta.yaml   \
     -V lang=en-GB               \
     --biblio=references.bib     \
@@ -108,7 +89,7 @@ _buildDocx() {
   if [[ $s -eq 0 ]]; then
     printf "%sbuilding word doc...\\n  See $logfile for details\\n"
   fi
-  pandoc  "$input"               \
+  pandoc  ".tmp/*.md"               \
 		--biblio=references.bib      \
     --verbose                    \
 		-o "$_OUTDIR$output".docx            \
@@ -127,8 +108,7 @@ _clean() {
 }
 
 _tidy() {
-  # if we used a temp file, remove it.
-  find . -type f -iname "*.tmp" -delete 
+  rm -rf .tmp
 }
 
 _print_help() {
@@ -136,7 +116,7 @@ _print_help() {
 Simplifies building pdf / word documents 
 
 Usage:
-  ${_ME} [BUILD OPTIONS] [-o | --output [FILENAME]]
+  ${_ME} [BUILD OPTIONS]
 
 Build Options:
   ${bold}-h | --help${normal}   Show this screen.
@@ -144,15 +124,13 @@ Build Options:
   ${bold}-w | --word${normal}   build docx
   ${bold}-c | --clean${normal}  clear the output directory
   ${bold}-s | --silent${normal} remove any logs created
-
-  ${bold}-o | --output${normal} specifiy an output file name
 HEREDOC
 }
 
 ###### OPTION PARSING ##########################################  
 
-OPTIONS=hpwco:s
-LONGOPTS=help,pdf,word,clean,output:,silent
+OPTIONS=hpwcs
+LONGOPTS=help,pdf,word,clean,silent
 
 # -regarding ! and PIPESTATUS see above
 # -temporarily store output to be able to check for errors
@@ -172,8 +150,6 @@ p=0 # create pdf
 w=0 # create word
 s=0 # silent
 h=0 # need help?
-output=$(_outputName)
-input=$(_inputName)
 
 if [ "$1" == '--' ]; then
     ## no options passed = help message
@@ -182,37 +158,19 @@ else
   while true; do
       case "$1" in
           -p|--pdf)
-              p=1
-              shift
-              ;;
+              p=1; shift;;
           -w|--word)
-              w=1
-              shift
-              ;;
+              w=1; shift;;
           -c|--clean)
-              c=1
-              shift
-              ;;
+              c=1; shift;;
           -s|--silent)
-              s=1
-              shift
-              ;;
+              s=1; shift;;
           -h|--help)
-              h=1
-              shift
-              ;;
-          -o|--output)
-              output="$2"
-              shift 2
-              ;;
+              h=1; shift;;
           --)
-              shift
-              break
-              ;;
+              shift; break;;
           *)
-              echo "unrecognised flag."
-              h=1
-              ;;
+              h=1;;
       esac
   done 
 fi
@@ -224,11 +182,10 @@ main() {
   _print_help
   else
     if [[ $c -eq 1 ]]; then _clean;  exit; fi
-    if [[ $p -eq 1 ]]; then _buildPDF; fi
-    if [[ $w -eq 1 ]]; then _buildDocx; fi
+    if [[ $p -eq 1 ]]; then _makeInputFile; _buildPDF; fi
+    if [[ $w -eq 1 ]]; then _makeInputFile; _buildDocx; fi
     if [[ $s -eq 1 ]]; then _rmlogs; fi
   fi
 }
 
 main
-

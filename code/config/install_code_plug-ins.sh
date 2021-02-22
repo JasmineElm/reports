@@ -1,6 +1,4 @@
-#!/bin/sh
-
-#install the code plugins
+#!/usr/bin/env bash
 
 code --install-extension yzhang.markdown-all-in-one
 code --install-extension DougFinke.vscode-pandoc
