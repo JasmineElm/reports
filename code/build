@@ -90,10 +90,10 @@ _buildDocx() {
   if [[ $s -eq 0 ]]; then
     printf "%sbuilding word doc...\\n  See $logfile for details\\n"
   fi
-  pandoc  ".tmp/*.md"               \
+  pandoc  .tmp/*.md              \
 		--biblio=references.bib      \
     --verbose                    \
-		-o "$_OUTDIR$output".docx            \
+		-o "$_OUTDIR$output".docx    \
 		--template template/def.docx \
 		--highlight-style=zenburn    \
     --strip-comments             \
