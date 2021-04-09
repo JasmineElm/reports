@@ -39,7 +39,7 @@ _yamlLineMatches() {
   grep -c "pdf-title" meta.yaml
 }
 
-_outFNFromYaml(){
+_outFNFromYaml() {
   grep "pdf-title" meta.yaml | sed 's/pdf-title://;s/^[ \t]*//;s/[ \t]*$//;s/[][]//g;s/[^A-Za-z0-9.-]/_/g'
 }
 
@@ -56,7 +56,7 @@ _outputFileName() {
 
 _cleanInputFile() {
   # files should be utf8 anyway, but explicitly change it here...
-  iconv -c --verbose -t utf8  "$1" > "$2" 
+  iconv -c --verbose -t utf8 "$1" >"$2"
   rm "$1"
 }
 
@@ -74,46 +74,29 @@ _makeInputFile() {
 
 output=$(_outputFileName)
 
-_buildPDF() {
-  logfile=$output.pdf.log
-  if [[ $s -eq 0 ]]; then
-    printf "%sbuilding pdf...\\n  See $logfile for details\\n"
+_buildReport() {
+  local format="$1"
+  logfile="$output.$format.log"
+  if [ "$noLogFiles" = false ]; then
+    printf "%sbuilding $format...\\n  See $logfile for details\\n"
   fi
-  pandoc  .tmp/*.md                 \
-    --metadata-file=meta.yaml       \
-    -V lang=en-GB                   \
-    --citeproc                      \
-    --verbose                       \
-		--pdf-engine=xelatex            \
-		--output "$_OUTDIR$output".pdf  \
-		--template template/def.tex     \
-		--highlight-style=zenburn       \
-    --strip-comments                \
-    --csl=template/def.csl 2>&1 | tee "$_OUTDIR$logfile" 
-  }
-
-_buildDocx() {
-  logfile=$output.docx.log
-  if [[ $s -eq 0 ]]; then
-    printf "%sbuilding word doc...\\n  See $logfile for details\\n"
-  fi
-  pandoc  .tmp/*.md                 \
-    --metadata-file=meta.yaml       \
-    -V lang=en-GB                   \
-    --citeproc                      \
-    --verbose                       \
-		--output "$_OUTDIR$output".docx \
-		--highlight-style=zenburn       \
-    --strip-comments                \
-		--csl=template/def.csl 2>&1 | tee "$_OUTDIR$logfile" 
+  pandoc .tmp/*.md --from=markdown --to="$format"   \
+    --metadata-file=meta.yaml           \
+    --variable=lang:en-GB --citeproc    \
+    --pdf-engine=xelatex --strip-comments                \
+    --output "$_OUTDIR$output.$format"  \
+    --template=template/def.tex         \
+    --reference-doc=template/def.docx   \
+    --highlight-style=zenburn --verbose \
+    --csl=template/def.csl 2>&1 | tee "$_OUTDIR$logfile"
 }
-
+# --template template/def.tex     \
 _rmlogs() {
   [ "$(find output/ -type f -iname '*.log')" ] && find output/ -type f -iname '*.log' -delete || printf "Already empty: nothing to do\n"
 }
 
 _clean() {
-      [ "$(ls -A output)" ] &&  rm -v output/* || printf "Already empty: nothing to do\n"
+  [ "$(ls -A output)" ] && rm -v output/* || printf "Already empty: nothing to do\n"
 }
 
 _tidy() {
@@ -136,7 +119,7 @@ Build Options:
 HEREDOC
 }
 
-###### OPTION PARSING ##########################################  
+###### OPTION PARSING ##########################################
 
 OPTIONS=hpwcs
 LONGOPTS=help,pdf,word,clean,silent
@@ -147,54 +130,76 @@ LONGOPTS=help,pdf,word,clean,silent
 # -pass arguments only via   -- "$@"   to separate them correctly
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
-    # e.g. return value is 1
-    #  then getopt has complained about wrong arguments to stdout
-    exit 2
+  # e.g. return value is 1
+  #  then getopt has complained about wrong arguments to stdout
+  exit 2
 fi
 # read getopt’s output this way to handle the quoting right:
 eval set -- "$PARSED"
 
-c=0 # clean up
-p=0 # create pdf
-w=0 # create word
-s=0 # silent
-h=0 # need help?
+clearOutput=false
+makeInputFile=false
+noLogFiles=false
+showHelp=false
 
+formats_array=()
 if [ "$1" == '--' ]; then
-    ## no options passed = help message
-    h=1
+  ## no options passed = help message
+  showHelp=true
 else
   while true; do
-      case "$1" in
-          -p|--pdf)
-              p=1; shift;;
-          -w|--word)
-              w=1; shift;;
-          -c|--clean)
-              c=1; shift;;
-          -s|--silent)
-              s=1; shift;;
-          -h|--help)
-              h=1; shift;;
-          --)
-              shift; break;;
-          *)
-              h=1;;
-      esac
-  done 
+    case "$1" in
+    -p | --pdf)
+      formats_array+=("pdf")
+      makeInputFile=true
+      shift
+      ;;
+    -w | --word)
+      formats_array+=("docx")
+      makeInputFile=true
+      shift
+      ;;
+    -c | --clean)
+      clearOutput=true
+      shift
+      ;;
+    -s | --silent)
+      noLogFiles=true
+      shift
+      ;;
+    -h | --help)
+      showHelp=true
+      shift
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      showHelp=true
+      ;;
+    esac
+  done
 fi
 
 main() {
   trap _tidy EXIT
-  if [[ $h -eq 1 ]]; then
-  # print help and nothing else...
-  _print_help
+  if [ "$showHelp" = true ]; then
+    # print help and nothing else...
+    _print_help
+    exit 0
   else
-    if [[ $c -eq 1 ]]; then _clean;  exit; fi
-    if [[ $p -eq 1 ]] || [[ $w -eq 1 ]]; then _makeInputFile; fi
-    if [[ $p -eq 1 ]]; then _buildPDF; fi
-    if [[ $w -eq 1 ]]; then _buildDocx; fi
-    if [[ $s -eq 1 ]]; then _rmlogs; fi
+    if [ "$clearOutput" = true ]; then
+      _clean
+      exit
+    fi
+    if [ $makeInputFile = true ]; then
+      _makeInputFile
+      for format in "${formats_array[@]}"; do
+        _buildReport "$format"
+      done
+    fi
+    if [ "$noLogFiles" = true ]; then _rmlogs; fi
   fi
 }
 
