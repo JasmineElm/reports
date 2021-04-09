@@ -4,7 +4,7 @@
 
 set -u
 set -e
-# trap "echo ""Aborting due to errexit on line $LINENO. Exit code: $?"" >&2" ERR
+trap "echo ""Aborting due to errexit on line $LINENO. Exit code: $?"" >&2" ERR
 set -o errtrace
 set -o pipefail
 IFS=$'\n\t'
@@ -20,7 +20,7 @@ normal=$(tput sgr0)
 
 ######  FUNCTIONS    ###########################################
 
-# Filename (IN ORDER)
+# Filename logic (IN ORDER, rules overwrite preceeding ones)
 # if single file   - that's our name
 # if multiple file - use "report"
 # if specified in meta.yaml, use that
@@ -54,10 +54,17 @@ _outputFileName() {
   printf "%s$outFile"
 }
 
+_cleanInputFile() {
+  # files should be utf8 anyway, but explicitly change it here...
+  iconv -c --verbose -t utf8  "$1" > "$2" 
+  rm "$1"
+}
+
 _makeInputFile() {
   rm -rf .tmp && mkdir .tmp
-  tmpfile=$(date +%s).md
-  cat $(find . -iname "*.md" -exec echo "{}" \; | sort) >>".tmp/$tmpfile"
+  tmpfile=".tmp/$(date +%s)"
+  cat $(find . -iname "*.md" -exec echo "{}" \; | sort) >>"$tmpfile"
+  _cleanInputFile "$tmpfile" "$tmpfile.md"
 }
 
 ### BUILD ARGUMENTS ###
@@ -72,17 +79,17 @@ _buildPDF() {
   if [[ $s -eq 0 ]]; then
     printf "%sbuilding pdf...\\n  See $logfile for details\\n"
   fi
-  pandoc  .tmp/*.md             \
-    --metadata-file=meta.yaml   \
-    -V lang=en-GB               \
-    --biblio=references.bib     \
-    --verbose                   \
-		--pdf-engine=xelatex        \
-		-o "$_OUTDIR$output".pdf    \
-		--template template/def.tex \
-		--highlight-style=zenburn   \
-    --strip-comments            \
-    --csl=template/def.csl > "$_OUTDIR$logfile" 2>&1
+  pandoc  .tmp/*.md                 \
+    --metadata-file=meta.yaml       \
+    -V lang=en-GB                   \
+    --citeproc                      \
+    --verbose                       \
+		--pdf-engine=xelatex            \
+		--output "$_OUTDIR$output".pdf  \
+		--template template/def.tex     \
+		--highlight-style=zenburn       \
+    --strip-comments                \
+    --csl=template/def.csl 2>&1 | tee "$_OUTDIR$logfile" 
   }
 
 _buildDocx() {
@@ -90,14 +97,15 @@ _buildDocx() {
   if [[ $s -eq 0 ]]; then
     printf "%sbuilding word doc...\\n  See $logfile for details\\n"
   fi
-  pandoc  .tmp/*.md              \
-		--biblio=references.bib      \
-    --verbose                    \
-		-o "$_OUTDIR$output".docx    \
-		--template template/def.docx \
-		--highlight-style=zenburn    \
-    --strip-comments             \
-		--csl=template/def.csl > "$_OUTDIR$logfile" 2>&1
+  pandoc  .tmp/*.md                 \
+    --metadata-file=meta.yaml       \
+    -V lang=en-GB                   \
+    --citeproc                      \
+    --verbose                       \
+		--output "$_OUTDIR$output".docx \
+		--highlight-style=zenburn       \
+    --strip-comments                \
+		--csl=template/def.csl 2>&1 | tee "$_OUTDIR$logfile" 
 }
 
 _rmlogs() {
@@ -183,8 +191,9 @@ main() {
   _print_help
   else
     if [[ $c -eq 1 ]]; then _clean;  exit; fi
-    if [[ $p -eq 1 ]]; then _makeInputFile; _buildPDF; fi
-    if [[ $w -eq 1 ]]; then _makeInputFile; _buildDocx; fi
+    if [[ $p -eq 1 ]] || [[ $w -eq 1 ]]; then _makeInputFile; fi
+    if [[ $p -eq 1 ]]; then _buildPDF; fi
+    if [[ $w -eq 1 ]]; then _buildDocx; fi
     if [[ $s -eq 1 ]]; then _rmlogs; fi
   fi
 }
