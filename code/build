@@ -60,17 +60,24 @@ _cleanInputFile() {
   rm "$1"
 }
 
+_concatenate_files() {
+  # all files should have a pagebreak
+    printf "file order:\n"
+  for file in *.md; do
+    (cat "${file}";  printf "\n\pagebreak\n") >>"$1"
+     printf "%s\t$file\n"
+  done
+  sed -i '$ d' "$1"
+}
 _makeInputFile() {
   rm -rf .tmp && mkdir .tmp
   tmpfile=".tmp/$(date +%s)"
-  cat $(find . -iname "*.md" -exec echo "{}" \; | sort) >>"$tmpfile"
+  #concatenate all the files found wi
+  _concatenate_files "$tmpfile"
   _cleanInputFile "$tmpfile" "$tmpfile.md"
 }
 
 ### BUILD ARGUMENTS ###
-#
-# some tex templates override the language param
-# declare here not in the meta.yaml to be safe
 
 output=$(_outputFileName)
 
@@ -80,17 +87,12 @@ _buildReport() {
   if [ "$noLogFiles" = false ]; then
     printf "%sbuilding $format...\\n  See $logfile for details\\n"
   fi
-  pandoc .tmp/*.md --from=markdown --to="$format"   \
-    --metadata-file=meta.yaml           \
-    --variable=lang:en-GB --citeproc    \
-    --pdf-engine=xelatex --strip-comments                \
-    --output "$_OUTDIR$output.$format"  \
-    --template=template/def.tex         \
-    --reference-doc=template/def.docx   \
-    --highlight-style=zenburn --verbose \
-    --csl=template/def.csl 2>&1 | tee "$_OUTDIR$logfile"
+  pandoc .tmp/*.md \
+    --defaults=defaults.yaml \
+    --output "$_OUTDIR$output.$format" \
+    2>&1 | tee "$_OUTDIR$logfile"
 }
-# --template template/def.tex     \
+
 _rmlogs() {
   [ "$(find output/ -type f -iname '*.log')" ] && find output/ -type f -iname '*.log' -delete || printf "Already empty: nothing to do\n"
 }
@@ -183,7 +185,7 @@ else
 fi
 
 main() {
-  trap _tidy EXIT
+  # trap _tidy EXIT
   if [ "$showHelp" = true ]; then
     # print help and nothing else...
     _print_help
