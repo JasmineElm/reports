@@ -68,9 +68,6 @@ _makeInputFile() {
 }
 
 ### BUILD ARGUMENTS ###
-#
-# some tex templates override the language param
-# declare here not in the meta.yaml to be safe
 
 output=$(_outputFileName)
 
@@ -80,17 +77,12 @@ _buildReport() {
   if [ "$noLogFiles" = false ]; then
     printf "%sbuilding $format...\\n  See $logfile for details\\n"
   fi
-  pandoc .tmp/*.md --from=markdown --to="$format"   \
-    --metadata-file=meta.yaml           \
-    --variable=lang:en-GB --citeproc    \
-    --pdf-engine=xelatex --strip-comments                \
-    --output "$_OUTDIR$output.$format"  \
-    --template=template/def.tex         \
-    --reference-doc=template/def.docx   \
-    --highlight-style=zenburn --verbose \
-    --csl=template/def.csl 2>&1 | tee "$_OUTDIR$logfile"
+  pandoc .tmp/*.md \
+    --defaults=defaults.yaml \
+    --output "$_OUTDIR$output.$format" \
+       2>&1 | tee "$_OUTDIR$logfile"
 }
-# --template template/def.tex     \
+
 _rmlogs() {
   [ "$(find output/ -type f -iname '*.log')" ] && find output/ -type f -iname '*.log' -delete || printf "Already empty: nothing to do\n"
 }
