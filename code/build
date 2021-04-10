@@ -60,7 +60,7 @@ _cleanInputFile() {
   rm "$1"
 }
 
-_concatenate_files() {
+_concatenateFiles() {
   # all files should have a pagebreak
     printf "file order:\n"
   for file in *.md; do
@@ -73,7 +73,7 @@ _makeInputFile() {
   rm -rf .tmp && mkdir .tmp
   tmpfile=".tmp/$(date +%s)"
   #concatenate all the files found wi
-  _concatenate_files "$tmpfile"
+  _concatenateFiles "$tmpfile"
   _cleanInputFile "$tmpfile" "$tmpfile.md"
 }
 
