@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
 
-######  STRICT MODE  ###########################################
-
-set -u
-set -e
+set -u -e -o errtrace -o pipefail
 trap "echo ""Aborting due to errexit on line $LINENO. Exit code: $?"" >&2" ERR
-set -o errtrace
-set -o pipefail
 IFS=$'\n\t'
 
 ######  VARIABLES    ###########################################
@@ -20,17 +15,12 @@ normal=$(tput sgr0)
 
 ######  FUNCTIONS    ###########################################
 
-# Filename logic (IN ORDER, rules overwrite preceeding ones)
-# if single file   - that's our name
-# if multiple file - use "report"
-# if specified in meta.yaml, use that
-
 _countMarkdown() {
-  find . -name "*.md" -type f | wc -l
+  find . -iwholename "./*.md" -type f | wc -l
 }
 
 _outFNFromMD() {
-  input=$(find . -type f -iname "*.md")
+  input=$(find . -type f -iwholename "./*.md")
   output=$(basename -- "$input")
   echo "${output%.*}"
 }
@@ -44,7 +34,10 @@ _outFNFromYaml() {
 }
 
 _outputFileName() {
-  outFile='report'
+  # multiple md = use "report"
+  # single md = use that filename
+  # if specified in yaml, use that instead
+  outFile='report' 
   if [[ $(_countMarkdown) -eq 1 ]]; then
     outFile=$(_outFNFromMD)
   fi
@@ -62,12 +55,15 @@ _cleanInputFile() {
 
 _concatenateFiles() {
   # all files should have a pagebreak
-    printf "file order:\n"
+  printf "file order:\n"
   for file in *.md; do
-    (cat "${file}";  printf "\n\pagebreak\n") >>"$1"
-     printf "%s\t$file\n"
+    (
+      cat "${file}"
+      printf "\n\pagebreak\n"
+    ) >>"$1"
+    printf "%s\t$file\n"
   done
-  sed -i '$ d' "$1"
+  sed -i '$ d' "$1" #remove the last pagebreak that we added
 }
 _makeInputFile() {
   rm -rf .tmp && mkdir .tmp
@@ -76,10 +72,6 @@ _makeInputFile() {
   _concatenateFiles "$tmpfile"
   _cleanInputFile "$tmpfile" "$tmpfile.md"
 }
-
-### BUILD ARGUMENTS ###
-
-output=$(_outputFileName)
 
 _buildReport() {
   local format="$1"
@@ -126,10 +118,6 @@ HEREDOC
 OPTIONS=hpwcs
 LONGOPTS=help,pdf,word,clean,silent
 
-# -regarding ! and PIPESTATUS see above
-# -temporarily store output to be able to check for errors
-# -activate quoting/enhanced mode (e.g. by writing out “--options”)
-# -pass arguments only via   -- "$@"   to separate them correctly
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
   # e.g. return value is 1
@@ -185,7 +173,7 @@ else
 fi
 
 main() {
-  # trap _tidy EXIT
+  trap _tidy EXIT # clear our .tmp dir on exit.
   if [ "$showHelp" = true ]; then
     # print help and nothing else...
     _print_help
@@ -197,6 +185,7 @@ main() {
     fi
     if [ $makeInputFile = true ]; then
       _makeInputFile
+      output=$(_outputFileName)
       for format in "${formats_array[@]}"; do
         _buildReport "$format"
       done

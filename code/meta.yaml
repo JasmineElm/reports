@@ -9,12 +9,12 @@ tags:
 pdf-title: [this will also be the filename]
 author-meta: [James Lemin]
 draft: false
-date: [2020]
+date: [2020/01/01]
 titlepage: true
 toc-own-page: true
 toc-title: [Contents]
 toc-depth: [2]
-lot: True #remove line to not include List of tables
-lof: True #remove line to not include List of figures
+lot: true #remove line to not include List of tables
+lof: true #remove line to not include List of figures
 bibliography: [references.bib]
 biblio-title: [References]
