@@ -1,13 +1,14 @@
-# Generic Assignment Template
+# Generic assignment template
 
-This repo contains my tools to make writing an academic document a little easier.
+This repo contains tools to make writing an academic document a little easier.
 
 ## Writing
 
 + Write the report in [the code directory](code/)
-  + Single or multiple `*.md` files can be used.
+  + use one or more `*.md` files.
 + Add references to [references.bib](code/references.bib)
-+ Add images used in the report to [figures](code/figures)
++ Add images to [figures](code/figures)
++ update the [meta.yaml](code/config/meta.yaml)
 
 ## Rendering
 
@@ -26,9 +27,10 @@ Build Options:
   -o | --output specify an output file name
 ```
 
-## Suggested 3rd party apps
+## Suggested third party applications
 
-+ [Zotero](https://www.zotero.org)
-+ [cookiecutter](https://drivendata.github.io/cookiecutter-data-science/)
++ [Zotero](https://www.zotero.org) manages references
++ [vale-cli](https://github.com/errata-ai/vale) will call out bad grammar.
++ [prettier](https://prettier.io/) can help automatically fix linting issues
 
 _Note:_ You may want to drop this rep into a [cookiecutter](https://drivendata.github.io/cookiecutter-data-science/) project, replacing the blank ```reports``` directory.
