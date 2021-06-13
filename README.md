@@ -16,7 +16,7 @@ This repo contains tools to make writing an academic document a little easier.
 Simplifies building pdf / word documents 
 
 Usage:
-  ${_ME} [BUILD OPTIONS] [-o | --output [FILENAME]]
+  build [BUILD OPTIONS]
 
 Build Options:
   -h | --help   Show this screen.
@@ -24,7 +24,6 @@ Build Options:
   -w | --word   build docx
   -c | --clean  clear the output directory
   -s | --silent remove any logs created
-  -o | --output specify an output file name
 ```
 
 ## Suggested third party applications
