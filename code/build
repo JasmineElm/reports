@@ -30,14 +30,15 @@ _yamlLineMatches() {
 }
 
 _outFNFromYaml() {
-  grep "pdf-title" meta.yaml | sed 's/pdf-title://;s/^[ \t]*//;s/[ \t]*$//;s/[][]//g;s/[^A-Za-z0-9.-]/_/g'
+  grep "pdf-title" meta.yaml \
+  | sed 's/pdf-title://;s/^[ \t]*//;s/[ \t]*$//;s/[][]//g;s/[^A-Za-z0-9.-]/_/g'
 }
 
 _outputFileName() {
   # multiple md = use "report"
   # single md = use that filename
   # if specified in yaml, use that instead
-  outFile='report' 
+  outFile='report'
   if [[ $(_countMarkdown) -eq 1 ]]; then
     outFile=$(_outFNFromMD)
   fi
@@ -55,13 +56,13 @@ _cleanInputFile() {
 
 _concatenateFiles() {
   # all files should have a pagebreak
-  printf "file order:\n"
+  printf "file order:\\n"
   for file in ./*.md; do
     (
       cat "${file}"
-      printf "\n\pagebreak\n"
+      printf "\\npagebreak\\n"
     ) >>"$1"
-    printf "%s\t$file\n"
+    printf "%s\\t$file\\n"
   done
   sed -i '$ d' "$1" #remove the last pagebreak that we added
 }
@@ -87,11 +88,13 @@ _buildReport() {
 }
 
 _rmlogs() {
-  [ "$(find output/ -type f -iname '*.log')" ] && find output/ -type f -iname '*.log' -delete || printf "Already empty: nothing to do\n"
+  [ "$(find output/ -type f -iname '*.log')" ] && find output/ -type f -iname
+  '*.log' -delete || printf "Already empty: nothing to do\\n"
 }
 
 _clean() {
-  [ "$(ls -A output)" ] && rm -v output/* || printf "Already empty: nothing to do\n"
+  [ "$(ls -A output)" ] && rm -v output/* \
+    || printf "Already empty: nothing to do\\n"
 }
 
 _tidy() {
@@ -119,7 +122,9 @@ HEREDOC
 OPTIONS=hpwcs
 LONGOPTS=help,pdf,word,clean,silent
 
-! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
+! PARSED=$(getopt --options=$OPTIONS \
+  --longoptions=$LONGOPTS \
+  --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
   # e.g. return value is 1
   #  then getopt has complained about wrong arguments to stdout
@@ -140,35 +145,35 @@ if [ "$1" == '--' ]; then
 else
   while true; do
     case "$1" in
-    -p | --pdf)
-      formats_array+=("pdf")
-      makeInputFile=true
-      shift
-      ;;
-    -w | --word)
-      formats_array+=("docx")
-      makeInputFile=true
-      shift
-      ;;
-    -c | --clean)
-      clearOutput=true
-      shift
-      ;;
-    -s | --silent)
-      noLogFiles=true
-      shift
-      ;;
-    -h | --help)
-      showHelp=true
-      shift
-      ;;
-    --)
-      shift
-      break
-      ;;
-    *)
-      showHelp=true
-      ;;
+      -p | --pdf)
+        formats_array+=("pdf")
+        makeInputFile=true
+        shift
+        ;;
+      -w | --word)
+        formats_array+=("docx")
+        makeInputFile=true
+        shift
+        ;;
+      -c | --clean)
+        clearOutput=true
+        shift
+        ;;
+      -s | --silent)
+        noLogFiles=true
+        shift
+        ;;
+      -h | --help)
+        showHelp=true
+        shift
+        ;;
+      --)
+        shift
+        break
+        ;;
+      *)
+        showHelp=true
+        ;;
     esac
   done
 fi
