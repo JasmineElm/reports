@@ -14,3 +14,12 @@ curl -o def.tex https://raw.githubusercontent.com/Wandmalfarbe/pandoc-latex-temp
 
 ## use the OU Harvard style instead...
 curl -o def.csl https://raw.githubusercontent.com/citation-style-language/styles/master/the-open-university-harvard.csl
+
+cd -
+
+# No xelatex? no problem! (required for pdf generation)
+[[ $(type tex &>/dev/null) ]] || sudo apt install -y texlive-xetex
+
+[[ $(type pip3 &>/dev/null) ]] || sudo apt install -y python3-pip
+# until Pandoc supports `\pagebreak` for docx, lets install a filter that does
+pip3 install git+https://github.com/pandocker/pandoc-docx-pagebreak-py

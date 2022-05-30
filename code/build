@@ -14,6 +14,19 @@ bold=$(tput bold)
 normal=$(tput sgr0)
 
 ######  FUNCTIONS    ###########################################
+_latestMarkdownDate() {
+  _LAST_MD_FILE=$(ls -tr *.md | tail -1)
+  date -r $_LAST_MD_FILE "+%Y/%m/%d"
+}
+
+_updateMeta() {
+  # update the date
+  _OLD_DATE=$(grep  "date: " meta.yaml | tr -cd '[:digit:]/')
+  #_NEW_DATE=$(date +%Y/%m/%d)
+  _NEW_DATE=$(_latestMarkdownDate)
+  [[ $_OLD_DATE -eq $_NEW_DATE ]] || \
+  sed -i "s#$_OLD_DATE#$_NEW_DATE#" meta.yaml
+}
 
 _countMarkdown() {
   find . -iwholename "./*.md" -type f | wc -l
@@ -84,6 +97,7 @@ _buildReport() {
   pandoc .tmp/*.md \
     --defaults=defaults.yaml \
     --output "$_OUTDIR$output.$format" \
+    --filter=pandoc-docx-pagebreakpy \
     2>&1 | tee "$_OUTDIR$logfile"
 }
 
@@ -191,6 +205,7 @@ main() {
     fi
     if [ $makeInputFile = true ]; then
       _makeInputFile
+      _updateMeta
       output=$(_outputFileName)
       for format in "${formats_array[@]}"; do
         _buildReport "$format"
