@@ -132,10 +132,10 @@ bugbears) it's a breath of fresh air to...
 
 which renders as you'd expect:
 
--   represent
--   bullet-points
--   like
--   this
+- represent
+- bullet-points
+- like
+- this
 
 Numbered lists are more complex, but follow the same understandable
 rules around indentation with the bonus of not needing to remember what
@@ -163,33 +163,33 @@ split by text
 @) work with special syntax
 ```
 
-@\) numbered @) lists
+@) numbered @) lists
 
 split by text
 
-@\) work with special syntax
+@) work with special syntax
 
 Again, this works seamlessly 'out of the box' though there's a
 possibility to confuse this syntax with the pandoc-cite syntax (e.g. )
 
--   how about a test of vim-pandoc's hard, automatic wrapping option
-    (`hA`) this should kick in at column 79
--   fingers crossed it does..!
--   success..!
+- how about a test of vim-pandoc's hard, automatic wrapping option
+  (`hA`) this should kick in at column 79
+- fingers crossed it does..!
+- success..!
 
 *some useful tests / syntax...*
 
--   *italic*
--   **bold**
--   \[small caps\]{.smallcaps}
--   <http://simple_url_render.com>
--   [more complex url render](http://example.com)
--   [my email](mailto:email@address.com)
--   reference link [example](https://james-lemin.com "my website")
--   Super^script^
--   Sub\~script\~
--   $tex$ math formulae $f(x) = x^2$
--   ~~strike through~~
+- *italic*
+- **bold**
+- \[small caps\]{.smallcaps}
+- <http://simple_url_render.com>
+- [more complex url render](http://example.com)
+- [my email](mailto:email@address.com)
+- reference link [example](https://james-lemin.com "my website")
+- Super^script^
+- Sub\~script\~
+- $tex$ math formulae $f(x) = x^2$
+- ~~strike through~~
 
 DefinitionTerm
 
@@ -212,17 +212,6 @@ elite. Dews ease excerpter labium nostrud veniam incident anim aliqua
 proident ea Ali quip inure ad. Arte consecrator ullamco amet non. Est
 eiusmod occaecat culpa pariatur eu dolore. @botton_seeing_2005. See
 [here](foo) for more info
-
-\pagebreak
-
-## References {-}
-
-*Want References to appear somewhere specific?* `<div id="refs"></div>`
-will sort you out!
-
-<div id="refs"></div>
-
-\pagebreak
 
 ## Glossary {-}
 

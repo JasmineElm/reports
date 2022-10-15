@@ -9,17 +9,25 @@ rm "*.tex"
 # eisvogel template is perfect to demonstrate the script
 curl -o def.tex https://raw.githubusercontent.com/Wandmalfarbe/pandoc-latex-template/master/eisvogel.tex
 
-## Definitive Harvard style...
-# curl -o def.csl https://raw.githubusercontent.com/citation-style-language/styles/master/harvard-cite-them-right.csl
-
 ## use the OU Harvard style instead...
 curl -o def.csl https://raw.githubusercontent.com/citation-style-language/styles/master/the-open-university-harvard.csl
 
 cd -
+# grab the latest pandoc package - apt can be out of date (credit:
+# https://gist.github.com/steinwaywhw/a4cd19cda655b8249d908261a62687f8 )
+curl -s https://api.github.com/repos/jgm/pandoc/releases/latest \
+  | grep "browser_download_url.*deb" \
+  | cut -d : -f 2,3 \
+  | tr -d \" \
+  | head -1 \
+  | wget -qi -
 
-# No xelatex? no problem! (required for pdf generation)
-[[ $(type tex &>/dev/null) ]] || sudo apt install -y texlive-xetex
+sudo apt install texlive \
+                 texlive-latex-extra \
+                 texlive-fonts-recommended \
+                 texlive-fonts-extra \
+                 texlive-xetex \
+                 python3-pip -y
 
-[[ $(type pip3 &>/dev/null) ]] || sudo apt install -y python3-pip
 # until Pandoc supports `\pagebreak` for docx, lets install a filter that does
 pip3 install git+https://github.com/pandocker/pandoc-docx-pagebreak-py

@@ -74,7 +74,9 @@ _concatenateFiles() {
   for file in ./*.md; do
     (
       cat "${file}"
-      printf "\\npagebreak\\n"
+      printf "\\n\\n"
+      printf "BREAKFORMAT"
+      printf "\\n"
     ) >>"$1"
     printf "%s\\t$file\\n"
   done
@@ -119,7 +121,7 @@ _tidy() {
 
 _print_help() {
   cat <<HEREDOC
-Simplifies building pdf / word documents 
+Simplifies building pdf / word documents
 
 Usage:
   ${_ME} [BUILD OPTIONS]
@@ -210,7 +212,15 @@ main() {
       _updateMeta
       output=$(_outputFileName)
       for format in "${formats_array[@]}"; do
+        case $format in 
+          docx)
+            sed -i 's/BREAKFORMAT/\\newpage/g' .tmp/*.md;;
+          pdf)
+            sed -i 's/BREAKFORMAT/\\pagebreak/g' .tmp/*.md;;
+        esac
         _buildReport "$format"
+            sed -i 's/pagebreak/BREAKFORMAT/g' .tmp/*.md
+            sed -i 's/\newpage/BREAKFORMAT/g' .tmp/*.md
       done
     fi
     if [ "$noLogFiles" = true ]; then _rmlogs; fi
