@@ -1,18 +1,24 @@
 #!/usr/bin/env bash
 
+### VARIABLES ###
+#
+_warn=$(tput setaf 3)
+_normal=$(tput sgr0)
 cd ../template || exit
 
 # remove any user defined csl/tex files, and use sensible defults from git repos...
-rm "*.csl"
-rm "*.tex"
+rm -rf "*.csl"
+rm -rf "*.tex"
 
 # eisvogel template is perfect to demonstrate the script
-curl -o def.tex https://raw.githubusercontent.com/Wandmalfarbe/pandoc-latex-template/master/eisvogel.tex
+curl -s -o def.tex https://raw.githubusercontent.com/Wandmalfarbe/pandoc-latex-template/master/eisvogel.tex
 
 ## use the OU Harvard style instead...
-curl -o def.csl https://raw.githubusercontent.com/citation-style-language/styles/master/the-open-university-harvard.csl
+curl -s -o def.csl https://raw.githubusercontent.com/citation-style-language/styles/master/harvard-cite-them-right.csl
 
-cd -
+cd - || exit
+printf "%s$_warn"
+printf "%sInstalling pandoc... $_normal\n"
 # grab the latest pandoc package - apt can be out of date (credit:
 # https://gist.github.com/steinwaywhw/a4cd19cda655b8249d908261a62687f8 )
 curl -s https://api.github.com/repos/jgm/pandoc/releases/latest \
@@ -21,8 +27,11 @@ curl -s https://api.github.com/repos/jgm/pandoc/releases/latest \
   | tr -d \" \
   | head -1 \
   | wget -qi -
-
-sudo apt install texlive \
+package=$(ls pandoc*.deb)
+sudo apt -qq install ./"$package" -y && rm "$package"
+printf "%s$_warn"
+printf "%sInstalling texlive. This may take some time... $_normal\n"
+sudo apt -qq install texlive \
                  texlive-latex-extra \
                  texlive-fonts-recommended \
                  texlive-fonts-extra \
@@ -30,4 +39,13 @@ sudo apt install texlive \
                  python3-pip -y
 
 # until Pandoc supports `\pagebreak` for docx, lets install a filter that does
-pip3 install git+https://github.com/pandocker/pandoc-docx-pagebreak-py
+# this breaks system packages but we don't care ;)
+#
+printf "%s$_warn"
+printf "%sInstalling pandoc-docx-pagebreak-py, this will break system packages...$_normal"
+printf "continue? [y/n]\n"
+read -r ans
+if [ "$ans" != "y" ]; then
+  exit 1
+fi
+pip3 install git+https://github.com/pandocker/pandoc-docx-pagebreak-py --break-system-packages
