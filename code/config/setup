@@ -4,48 +4,84 @@
 #
 _warn=$(tput setaf 3)
 _normal=$(tput sgr0)
+### FUNCTIONS ###
+#
+_test_in_virtual_env() {
+  # if in python virtual env or conda env, return 0
+  if [[ -n "$VIRTUAL_ENV" ]] || [[ -n "$CONDA_DEFAULT_ENV" ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+_binary_exists() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+_pip_library_exists() {
+  pip3 show "$1" >/dev/null 2>&1
+}
+
+_install_latest_pandoc() {
+  # grab the latest pandoc package - apt can be out of date (credit:
+  # https://gist.github.com/steinwaywhw/a4cd19cda655b8249d908261a62687f8 )
+  curl -s https://api.github.com/repos/jgm/pandoc/releases/latest \
+    | grep "browser_download_url.*deb" \
+    | cut -d : -f 2,3 \
+    | tr -d \" \
+    | head -1 \
+    | wget -qi -
+  package=$(ls pandoc*.deb)
+  sudo apt -qq install ./"$package" -y && rm "$package"
+}
+
+_install_word_pagebreaks() {
+  _pip_library_exists pandoc-docx-pagebreak-py || \
+    printf "%s$_warn\tInstalling pandoc-docx-pagebreak-py...$_normal\n"
+  # of not in virtual env, warn that this will break system packages
+   if ! _test_in_virtual_env; then
+    printf "%s$_warn\tNot in virtual environment, installing pandoc-docx-pagebreak-py will break system packages...$_normal" && \
+    printf "continue? [y/n]\n" &&
+    read -r ans &&
+    if [ "$ans" != "y" ]; then
+      exit 1
+    fi
+    pip3 install git+https://github.com/pandocker/pandoc-docx-pagebreak-py --break-system-packages
+  else # in virtual env, install normally
+    pip3 install git+https://github.com/pandocker/pandoc-docx-pagebreak-py
+  fi
+}
+
+### MAIN ###
 cd ../template || exit
 
 # remove any user defined csl/tex files, and use sensible defults from git repos...
-rm -rf "*.csl"
-rm -rf "*.tex"
+rm -f ./*.csl ./*.tex
+_binary_exists curl || sudo apt -qq install curl -y
 
-# eisvogel template is perfect to demonstrate the script
+# eisvogel template is a nice default style
 curl -s -o def.tex https://raw.githubusercontent.com/Wandmalfarbe/pandoc-latex-template/master/eisvogel.tex
 
-## use the OU Harvard style instead...
+## use CTR's harvard style
 curl -s -o def.csl https://raw.githubusercontent.com/citation-style-language/styles/master/harvard-cite-them-right.csl
 
+# no need to be in the template directory anymore; return and install binaries
 cd - || exit
-printf "%s$_warn"
-printf "%sInstalling pandoc... $_normal\n"
 # grab the latest pandoc package - apt can be out of date (credit:
 # https://gist.github.com/steinwaywhw/a4cd19cda655b8249d908261a62687f8 )
-curl -s https://api.github.com/repos/jgm/pandoc/releases/latest \
-  | grep "browser_download_url.*deb" \
-  | cut -d : -f 2,3 \
-  | tr -d \" \
-  | head -1 \
-  | wget -qi -
-package=$(ls pandoc*.deb)
-sudo apt -qq install ./"$package" -y && rm "$package"
-printf "%s$_warn"
-printf "%sInstalling texlive. This may take some time... $_normal\n"
-sudo apt -qq install texlive \
-                 texlive-latex-extra \
-                 texlive-fonts-recommended \
-                 texlive-fonts-extra \
-                 texlive-xetex \
-                 python3-pip -y
+_binary_exists pandoc || \
+  printf "%s$_warn\tInstalling pandoc... $_normal\n" && \
+  _install_latest_pandoc
+_binary_exists texlive || \
+  printf "%s$_warn\tInstalling texlive. This may take some time... $_normal\n" && \
+  sudo apt -qq install texlive \
+      texlive-latex-extra \
+      texlive-fonts-recommended \
+      texlive-fonts-extra \
+      texlive-xetex -y
+_binary_exists pip3 || sudo apt -qq install python3-pip -y
+_binary_exists rsvg-convert || sudo apt install librsvg2-bin
 
-# until Pandoc supports `\pagebreak` for docx, lets install a filter that does
-# this breaks system packages but we don't care ;)
-#
-printf "%s$_warn"
-printf "%sInstalling pandoc-docx-pagebreak-py, this will break system packages...$_normal"
-printf "continue? [y/n]\n"
-read -r ans
-if [ "$ans" != "y" ]; then
-  exit 1
-fi
-pip3 install git+https://github.com/pandocker/pandoc-docx-pagebreak-py --break-system-packages
+# install pandoc-docx-pagebreak-py - this allows pagebreaks in docx files
+_install_word_pagebreaks

@@ -3,14 +3,14 @@
 variables:
   language: [en-GB]
 metadata-file: meta.yaml
-citeproc: true    
-pdf-engine: xelatex 
-strip-comments: true 
-template: template/def.tex    
+citeproc: true
+pdf-engine: xelatex
+strip-comments: true
+template: template/def.tex
 reference-doc: template/def.docx
 bibliography: references.bib
-csl: template/def.csl 
+csl: template/def.csl
 highlight-style: zenburn
 verbosity: WARNING
 # titlepage: true
-strip-empty-paragraphs: true
+#strip-empty-paragraphs: true
