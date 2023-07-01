@@ -15,8 +15,8 @@ normal=$(tput sgr0)
 
 ######  FUNCTIONS    ###########################################
 _latestMarkdownDate() {
-  _LAST_MD_FILE=$(ls -tr *.md | tail -1)
-  date -r $_LAST_MD_FILE "+%Y/%m/%d"
+  _LAST_MD_FILE=$(ls -tr ./*.md | tail -1)
+  date -r "$_LAST_MD_FILE" "+%Y/%m/%d"
 }
 
 _updateMeta() {
@@ -64,8 +64,10 @@ _outputFileName() {
 
 _cleanInputFile() {
   # files should be utf8 anyway, but explicitly change it here...
-  iconv -c --verbose -t utf8 "$1" >"$2"
-  rm "$1"
+ local input="$1"
+ local temp="$1".utf8
+  iconv -c --verbose -t utf8 "$input" >"$temp" && \
+  mv "$temp" "$input"
 }
 
 _concatenateFiles() {
@@ -83,12 +85,26 @@ _concatenateFiles() {
   sed -i '$ d' "$1" #remove the last pagebreak that we added
 }
 
+_preprocess_mermaid() {
+  local infile="$1"
+  local outfile; outfile="${infile//.md/-mermaid.md}"
+  echo " preprocessing $infile -->  $outfile"
+  # replace mermaid code blocks with images
+  npx -p @mermaid-js/mermaid-cli mmdc -i "$infile" -o "$outfile" \
+    --outputFormat=png && \
+  mv "$outfile" "$infile"
+  # where we see links to ./*-mermaid*.png, prepend the the .tmp/ directory
+  sed -i "s#(\./#(.tmp/#g" "$infile"
+}
+
 _makeInputFile() {
   rm -rf .tmp && mkdir .tmp
-  tmpfile=".tmp/$(date +%s)"
-  #concatenate all the files found wi
+  tmpfile=".tmp/$(date +%s).md"
+  #concatenate all the files found with a pagebreak between each
   _concatenateFiles "$tmpfile"
-  _cleanInputFile "$tmpfile" "$tmpfile.md"
+  # replace mermaid code blocks with images
+  _cleanInputFile "$tmpfile"
+  _preprocess_mermaid "$tmpfile"
 }
 
 _buildReport() {
@@ -197,7 +213,7 @@ else
 fi
 
 main() {
-  trap _tidy EXIT # clear our .tmp dir on exit.
+#  trap _tidy EXIT # clear our .tmp dir on exit.
   if [ "$showHelp" = true ]; then
     # print help and nothing else...
     _print_help
@@ -212,7 +228,7 @@ main() {
       _updateMeta
       output=$(_outputFileName)
       for format in "${formats_array[@]}"; do
-        case $format in 
+        case $format in
           docx)
             sed -i 's/BREAKFORMAT/\\newpage/g' .tmp/*.md;;
           pdf)
