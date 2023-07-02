@@ -6,7 +6,7 @@ _warn=$(tput setaf 3)
 _success=$(tput setaf 2)
 _normal=$(tput sgr0)
 _gh_base="https://raw.githubusercontent.com"
-
+_quiet=true
 ### FUNCTIONS ###
 #
 
@@ -15,16 +15,37 @@ _binary_exists() {
 }
 
 _package_exists() {
-  dpkg -s "$1" >/dev/null 2>&1
+  status="$(dpkg-query -W --showformat='${db:Status-Status}' "$1" 2>&1)"
+  if [ "$status" = "installed" ]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+_quiet_apt() {
+  [[ $_quiet == true ]] && echo "-qqy"
+}
+
+_explicit_install() {
+  [[ $_explicit == true ]] && read -p "Install $1? [y/N] " -n 1 -r
+  if [[ $_explicit == true && ! $REPLY =~ ^[Yy]$ ]]; then
+    printf "\n%s$_warn\tSkipping $1... $_normal\n"
+    return 1
+  else
+    printf "\n"
+    return 0
+  fi
 }
 
 _install_package() {
-  # install a package if it doesn't exist
+  # install a package if it doesn't exist,
   if _package_exists "$1"; then
   printf "%s$_success\t$1 already installed... $_normal\n" && return
   else
     printf "%s$_warn\tInstalling $1... $_normal\n"
-    sudo apt install -qq "$1" -y
+    _explicit_install "$1" && \
+    sudo apt install "$1" "$(_quiet_apt)"
   fi
 }
 
@@ -49,7 +70,7 @@ _install_latest_pandoc() {
   if [ "$remote_version" \> "$installed_version"  ]; then
     printf "%s$_warn\tInstalling Pandoc $remote_version\n"
     curl -s -L -o pandoc.deb "$url"
-    sudo apt install -qq  pandoc.deb -y && rm pandoc.deb
+    sudo apt install pandoc.deb "$(_quiet_apt)" && rm pandoc.deb
   else
     printf "%s$_success\tPandoc $installed_version already installed\n"
   fi
@@ -57,43 +78,102 @@ _install_latest_pandoc() {
 
 _install_pagebreak_filter() {
   [[ ! -f pagebreak.lua ]] && \
-    printf "%s$_warn\tInstalling pagebreak filter... $_normal\n" && \
-  curl -s -L -o pagebreak.lua \
+    curl -s -L -o pagebreak.lua \
   $_gh_base/pandoc-ext/pagebreak/main/pagebreak.lua
 }
 
 _install_templates() {
-  [[ -f ../template/def.tex ]] || \
-    printf "%s$_warn\tInstalling templates... $_normal\n" && \
-  curl -s -L -o ../template/def.tex \
+  [[ ! -f ../template/def.tex ]] && \
+      curl -s -L -o ../template/def.tex \
     $_gh_base/Wandmalfarbe/pandoc-latex-template/master/eisvogel.tex
 }
+
 _install_csl() {
-  [[ -f ../template/def.csl ]] || \
-    printf "%s$_warn\tInstalling CSL... $_normal\n" && \
-  curl -s -L -o ../template/def.csl \
+  [[ ! -f ../template/def.csl ]] && \
+    curl -s -L -o ../template/def.csl \
     $_gh_base/citation-style-language/styles/master/harvard-cite-them-right.csl
 }
 
+_show_help() {
+  cat <<HEREDOC
+  Usage: $0 [options]
+  Options:
+    -h, --help    Show this help message and exit
+    -q, --quiet   Do not prompt for input (default)
+    -e, --explicit   Prompt user for each dependency
+    -b, --binaries   Install binaries only
+    -c, --config   Install config (templates, csl, filters) only
+    -a, --all   Install everything (default)
+  Run script without options to install everything.
+HEREDOC
+}
+## OPTIONS ##
+
+_parse_options() {
+  [[ $# -eq 0 ]] && _all=true
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -h | --help)
+        _show_help
+        exit 0
+        ;;
+      -q | --quiet)
+        _quiet=true
+        shift
+        ;;
+      -e | --explicit)
+        _explicit=true
+        shift
+        ;;
+      -b | --binaries)
+        _binaries=true
+        shift
+        ;;
+      -c | --config)
+        _config=true
+        shift
+        ;;
+      -a | --all)
+        _all=true
+        shift
+        ;;
+      *)
+        printf "%sUnknown option: $1\n"
+        _show_help
+        exit 1
+        ;;
+    esac
+  done
+}
+
+_main() {
+  _parse_options "$@"
+  [[ $_all == true ]] && _binaries=true && _config=true
+  if [[ $_binaries == true ]]; then
+    printf "%s$_warn\nConsider running 'apt update' before running this script$_normal\n"
+    printf "%s$_warn\n* Installing dependencies... $_normal\n"
+    _install_package curl
+    _install_package texlive
+    _install_package texlive-latex-extra
+    _install_package texlive-fonts-recommended
+    _install_package texlive-fonts-extra
+    _install_package texlive-xetex
+    _install_package nodejs
+    _install_package npm
+    _install_package librsvg2-bin
+    _install_latest_pandoc
+  fi
+  if [[ $_config == true ]]; then
+    printf "%s$_warn\n* Installing filters... $_normal\n"
+    _install_pagebreak_filter
+    printf "%s$_warn\n* Installing templates... $_normal\n"
+    _install_templates
+    _install_csl
+  fi
+}
 ### MAIN ###
 # if script is run from the wrong directory, cd to the correct one
 if [ ! -f "setup.sh" ]; then
   cd "$(dirname "$0")" || exit
 fi
-printf "%s$_warn\tInstalling dependencies... $_normal\n"
-_install_package curl
-_install_latest_pandoc
-_install_package texlive
-_install_package texlive-latex-extra
-_install_package texlive-fonts-recommended
-_install_package texlive-fonts-extra
-_install_package texlive-xetex
-# mermaid requires node, npm
-_install_package nodejs
-_install_package npm
-_install_package librsvg2-bin
-printf "%s$_warn\tInstalling filters... $_normal\n"
-_install_pagebreak_filter
-printf "%s$_warn\tInstalling templates... $_normal\n"
-_install_templates
-_install_csl
+_main "$@"
