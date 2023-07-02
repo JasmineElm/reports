@@ -3,4 +3,5 @@
 *.swp
 *.tmp
 *.csl
-cleanse_repo.sh
+*.lua
+.vscode

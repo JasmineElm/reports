@@ -3,85 +3,97 @@
 ### VARIABLES ###
 #
 _warn=$(tput setaf 3)
+_success=$(tput setaf 2)
 _normal=$(tput sgr0)
+_gh_base="https://raw.githubusercontent.com"
+
 ### FUNCTIONS ###
 #
-_test_in_virtual_env() {
-  # if in python virtual env or conda env, return 0
-  if [[ -n "$VIRTUAL_ENV" ]] || [[ -n "$CONDA_DEFAULT_ENV" ]]; then
-    return 0
-  else
-    return 1
-  fi
-}
 
 _binary_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
-_pip_library_exists() {
-  pip3 show "$1" >/dev/null 2>&1
+_package_exists() {
+  dpkg -s "$1" >/dev/null 2>&1
 }
 
-_install_latest_pandoc() {
-  # grab the latest pandoc package - apt can be out of date (credit:
-  # https://gist.github.com/steinwaywhw/a4cd19cda655b8249d908261a62687f8 )
-  curl -s https://api.github.com/repos/jgm/pandoc/releases/latest \
-    | grep "browser_download_url.*deb" \
-    | cut -d : -f 2,3 \
-    | tr -d \" \
-    | head -1 \
-    | wget -qi -
-  package=$(ls pandoc*.deb)
-  sudo apt -qq install ./"$package" -y && rm "$package"
-}
-
-_install_word_pagebreaks() {
-  _pip_library_exists pandoc-docx-pagebreak-py || \
-    printf "%s$_warn\tInstalling pandoc-docx-pagebreak-py...$_normal\n"
-  # of not in virtual env, warn that this will break system packages
-   if ! _test_in_virtual_env; then
-    printf "%s$_warn\tNot in virtual environment, installing pandoc-docx-pagebreak-py will break system packages...$_normal" && \
-    printf "continue? [y/n]\n" &&
-    read -r ans &&
-    if [ "$ans" != "y" ]; then
-      exit 1
-    fi
-    pip3 install git+https://github.com/pandocker/pandoc-docx-pagebreak-py --break-system-packages
-  else # in virtual env, install normally
-    pip3 install git+https://github.com/pandocker/pandoc-docx-pagebreak-py
+_install_package() {
+  # install a package if it doesn't exist
+  if _package_exists "$1"; then
+  printf "%s$_success\t$1 already installed... $_normal\n" && return
+  else
+    printf "%s$_warn\tInstalling $1... $_normal\n"
+    sudo apt install -qq "$1" -y
   fi
 }
 
+_get_version() {
+  # get the version of a package
+  if _binary_exists "$1"; then
+    "$1" --version | head -1 | cut -d ' ' -f 2
+  else  # if the binary doesn't exist, return 0.0.0
+    printf "0.0.0"
+  fi
+}
+
+_install_latest_pandoc() {
+  url=$(curl -s https://api.github.com/repos/jgm/pandoc/releases/latest \
+    | grep "browser_download_url.*deb" \
+    | cut -d : -f 2,3 \
+    | tr -d \" \
+    | head -1)
+  remote_version="$(echo "$url" | cut -d / -f 8)"
+  installed_version=$(_get_version pandoc)
+
+  if [ "$remote_version" \> "$installed_version"  ]; then
+    printf "%s$_warn\tInstalling Pandoc $remote_version\n"
+    curl -s -L -o pandoc.deb "$url"
+    sudo apt install -qq  pandoc.deb -y && rm pandoc.deb
+  else
+    printf "%s$_success\tPandoc $installed_version already installed\n"
+  fi
+}
+
+_install_pagebreak_filter() {
+  [[ ! -f pagebreak.lua ]] && \
+    printf "%s$_warn\tInstalling pagebreak filter... $_normal\n" && \
+  curl -s -L -o pagebreak.lua \
+  $_gh_base/pandoc-ext/pagebreak/main/pagebreak.lua
+}
+
+_install_templates() {
+  [[ -f ../template/def.tex ]] || \
+    printf "%s$_warn\tInstalling templates... $_normal\n" && \
+  curl -s -L -o ../template/def.tex \
+    $_gh_base/Wandmalfarbe/pandoc-latex-template/master/eisvogel.tex
+}
+_install_csl() {
+  [[ -f ../template/def.csl ]] || \
+    printf "%s$_warn\tInstalling CSL... $_normal\n" && \
+  curl -s -L -o ../template/def.csl \
+    $_gh_base/citation-style-language/styles/master/harvard-cite-them-right.csl
+}
+
 ### MAIN ###
-cd ../template || exit
-
-# remove any user defined csl/tex files, and use sensible defults from git repos...
-rm -f ./*.csl ./*.tex
-_binary_exists curl || sudo apt -qq install curl -y
-
-# eisvogel template is a nice default style
-curl -s -o def.tex https://raw.githubusercontent.com/Wandmalfarbe/pandoc-latex-template/master/eisvogel.tex
-
-## use CTR's harvard style
-curl -s -o def.csl https://raw.githubusercontent.com/citation-style-language/styles/master/harvard-cite-them-right.csl
-
-# no need to be in the template directory anymore; return and install binaries
-cd - || exit
-# grab the latest pandoc package - apt can be out of date (credit:
-# https://gist.github.com/steinwaywhw/a4cd19cda655b8249d908261a62687f8 )
-_binary_exists pandoc || \
-  printf "%s$_warn\tInstalling pandoc... $_normal\n" && \
-  _install_latest_pandoc
-_binary_exists texlive || \
-  printf "%s$_warn\tInstalling texlive. This may take some time... $_normal\n" && \
-  sudo apt -qq install texlive \
-      texlive-latex-extra \
-      texlive-fonts-recommended \
-      texlive-fonts-extra \
-      texlive-xetex -y
-_binary_exists pip3 || sudo apt -qq install python3-pip -y
-_binary_exists rsvg-convert || sudo apt install librsvg2-bin
-
-# install pandoc-docx-pagebreak-py - this allows pagebreaks in docx files
-_install_word_pagebreaks
+# if script is run from the wrong directory, cd to the correct one
+if [ ! -f "setup.sh" ]; then
+  cd "$(dirname "$0")" || exit
+fi
+printf "%s$_warn\tInstalling dependencies... $_normal\n"
+_install_package curl
+_install_latest_pandoc
+_install_package texlive
+_install_package texlive-latex-extra
+_install_package texlive-fonts-recommended
+_install_package texlive-fonts-extra
+_install_package texlive-xetex
+# mermaid requires node, npm
+_install_package nodejs
+_install_package npm
+_install_package librsvg2-bin
+printf "%s$_warn\tInstalling filters... $_normal\n"
+_install_pagebreak_filter
+printf "%s$_warn\tInstalling templates... $_normal\n"
+_install_templates
+_install_csl

@@ -41,6 +41,8 @@ Another plugin recommendation is `vim-lexical` this is another plugin
 that stays out of the way, seamlessly correcting commonly misspelt words
 such as 'teh'.
 
+\pagebreak
+
 ## Why Use a Text Editor Over Word {-}
 
 Word is a great tool. Whether you want to write a letter, do a mail
@@ -54,6 +56,8 @@ minimal, and can be reduced even further through pretty minimal
 configuration. The editing in vi feels more precise too; cutting and
 pasting a sentence can be done with `(d)` then `p` rather than pfaffing
 around with a mouse, or `Ctrl+Shift` key combinations.
+
+\pagebreak
 
 ## Using Markdown {-}
 
@@ -207,10 +211,13 @@ DefinitionTerm
 
 ![Hello World image](figures/hw.png){height=200px}
 
+
 ### A Level-three Heading with a [link](/url) and *emphasis*
 
 Veniam veldt okay cat quis culpa ex cupid tat Lorem nulla qui. Officia  
 qua nisi esse et sint velit incididunt. Dolore non dolore quis officia.
+
+\pagebreak
 
 ## Using Mermaid Diagrams {-}
 
@@ -248,6 +255,7 @@ sequenceDiagram
    John->>Bob: How about you?
    Bob-->>John: Jolly good!
 ```
+\pagebreak
 
 ## Conclusion {-}
 

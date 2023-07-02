@@ -42,15 +42,5 @@ project, replacing the blank `reports` directory.
 ## Some Notes on the Setup Script
 
 The setup script in [config](code/config/setup) intends to add sensible
-templates, and install the prerequisites on systems that use `apt`. At
-the time of writing, pandoc doesn't handle pagebreaks well in Word
-documents, so the setup script installs the handy
-[pandoc-docx-pagebreak](https://github.com/pandocker/pandoc-docx-pagebreak-py)
-Python package. Modern Debian and Ubuntu reject system-wide
-installations using `pip`; it's bad practice that can break packages
-that should be installed via apt. To my knowledge, the pagebreak python
-script is only available via pip, and it's not wholly practical to
-create a `virtualenv` for each working document. That being the case,
-I've used the anti-pattern of using the `--break-system-packages` flag.
-I don't expect this *will* break system packages, but YMMV. The script
-explicitly prompts before it will install this parser.
+templates, and install the prerequisites on systems that use `apt`. If you want
+the binaries without the filters, templates and csl, you can run `./config/setup` then use the `cleanse_repo` script to remove the extra files.

@@ -77,7 +77,7 @@ _concatenateFiles() {
     (
       cat "${file}"
       printf "\\n\\n"
-      printf "BREAKFORMAT"
+      printf "\\pagebreak"
       printf "\\n"
     ) >>"$1"
     printf "%s\\t$file\\n"
@@ -117,7 +117,7 @@ _buildReport() {
   pandoc .tmp/*.md \
     --defaults=defaults.yaml \
     --output "$_OUTDIR$output.$format" \
-    --filter=pandoc-docx-pagebreakpy \
+    --lua-filter=config/pagebreak.lua \
     2>&1 | tee "$_OUTDIR$logfile"
 }
 
@@ -228,15 +228,7 @@ main() {
       _updateMeta
       output=$(_outputFileName)
       for format in "${formats_array[@]}"; do
-        case $format in
-          docx)
-            sed -i 's/BREAKFORMAT/\\newpage/g' .tmp/*.md;;
-          pdf)
-            sed -i 's/BREAKFORMAT/\\pagebreak/g' .tmp/*.md;;
-        esac
         _buildReport "$format"
-            sed -i 's/pagebreak/BREAKFORMAT/g' .tmp/*.md
-            sed -i 's/\newpage/BREAKFORMAT/g' .tmp/*.md
       done
     fi
     if [ "$noLogFiles" = true ]; then _rmlogs; fi
