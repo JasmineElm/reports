@@ -94,16 +94,28 @@ _install_csl() {
     $_gh_base/citation-style-language/styles/master/harvard-cite-them-right.csl
 }
 
+_clear_config() {
+  # cd to the base of the repo
+  cd "$(dirname "$0")/../../" || exit
+  printf "%s$_warn\tClearing config... $_normal\n"
+  _FILES_TO_REMOVE=("def.csl" "def.tex" "*.log" "*.pdf" "*.deb" "*.lua")
+  for file in "${_FILES_TO_REMOVE[@]}"; do
+    find . -name "$file" -type f -delete
+  done
+  cd - >/dev/null || exit
+}
+
 _show_help() {
   cat <<HEREDOC
   Usage: $0 [options]
   Options:
-    -h, --help    Show this help message and exit
-    -q, --quiet   Do not prompt for input (default)
-    -e, --explicit   Prompt user for each dependency
-    -b, --binaries   Install binaries only
-    -c, --config   Install config (templates, csl, filters) only
-    -a, --all   Install everything (default)
+    -h, --help      Show this help message and exit
+    -q, --quiet     Do not prompt for input (default)
+    -e, --explicit  Prompt user for each dependency
+    -b, --binaries  Install binaries only
+    -c, --config    Install config (templates, csl, filters) only
+    -a, --all       Install everything (default)
+    -x  --clear     Clear config
   Run script without options to install everything.
 HEREDOC
 }
@@ -136,6 +148,10 @@ _parse_options() {
       -a | --all)
         _all=true
         shift
+        ;;
+      -x | --clear)
+        _clear_config
+        exit 0
         ;;
       *)
         printf "%sUnknown option: $1\n"
