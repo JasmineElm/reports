@@ -88,7 +88,9 @@ _install_package texlive-latex-extra
 _install_package texlive-fonts-recommended
 _install_package texlive-fonts-extra
 _install_package texlive-xetex
-#_install_package python3-pip
+# mermaid requires node, npm
+_install_package nodejs
+_install_package npm
 _install_package librsvg2-bin
 printf "%s$_warn\tInstalling filters... $_normal\n"
 _install_pagebreak_filter
