@@ -15,7 +15,8 @@ normal=$(tput sgr0)
 
 ######  FUNCTIONS    ###########################################
 _latestMarkdownDate() {
-  _LAST_MD_FILE=$(ls -tr ./*.md | tail -1)
+  _LAST_MD_FILE=$(find . -type f -iwholename "./*.md" -printf '%T@ %p\n' \
+    | sort -n | tail -1 | cut -f2- -d" ")
   date -r "$_LAST_MD_FILE" "+%Y/%m/%d"
 }
 
@@ -156,7 +157,7 @@ HEREDOC
 OPTIONS=hpwcs
 LONGOPTS=help,pdf,word,clean,silent
 
-! PARSED=$(getopt --options=$OPTIONS \
+PARSED=$(getopt --options=$OPTIONS \
   --longoptions=$LONGOPTS \
   --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
