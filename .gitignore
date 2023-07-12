@@ -3,5 +3,10 @@
 *.swp
 *.tmp
 *.csl
+*.pdf
+*.docx
+!def.docx
+cleanse_repo.sh
+*.vscode
 *.lua
-.vscode
+*.bak

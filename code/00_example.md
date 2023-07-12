@@ -241,21 +241,6 @@ Thre's a few things to note here:
     incorrectly, so we'll use pngs instead
 
 
-```mermaid
-sequenceDiagram
-   accTitle: My title here
-   accDescr: My description here
-   autonumber
-   Alice->>John: Hello John, how are you?
-   loop Healthcheck
-       John->>John: Fight against hypochondria
-   end
-   Note right of John: Rational thoughts!
-   John-->>Alice: Great!
-   John->>Bob: How about you?
-   Bob-->>John: Jolly good!
-```
-\pagebreak
 
 ## Conclusion {-}
 
