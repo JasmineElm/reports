@@ -15,7 +15,8 @@ normal=$(tput sgr0)
 
 ######  FUNCTIONS    ###########################################
 _latestMarkdownDate() {
-  _LAST_MD_FILE=$(ls -tr ./*.md | tail -1)
+  _LAST_MD_FILE=$(find . -type f -iwholename "./*.md" -printf '%T@ %p\n' \
+    | sort -n | tail -1 | cut -f2- -d" ")
   date -r "$_LAST_MD_FILE" "+%Y/%m/%d"
 }
 
@@ -85,14 +86,23 @@ _concatenateFiles() {
   sed -i '$ d' "$1" #remove the last pagebreak that we added
 }
 
+fix_linebreaks() {
+  # mermaid preprocessor can be a little too aggressive with line breaks.
+  # Explicitly surround titles with at least  two line breaks
+  sed -i -e 's/\(^#.*$\)/\n\n\1\n\n/g' "$1"
+}
+
 _preprocess_mermaid() {
   local infile="$1"
   local outfile; outfile="${infile//.md/-mermaid.md}"
   echo " preprocessing $infile -->  $outfile"
   # replace mermaid code blocks with images
   npx -p @mermaid-js/mermaid-cli mmdc -i "$infile" -o "$outfile" \
-    --outputFormat=png && \
-  mv "$outfile" "$infile"
+    --outputFormat png \
+    --backgroundColor transparent \
+    --theme neutral \
+    --quiet && \
+      mv "$outfile" "$infile"
   # where we see links to ./*-mermaid*.png, prepend the the .tmp/ directory
   sed -i "s#(\./#(.tmp/#g" "$infile"
 }
@@ -102,9 +112,12 @@ _makeInputFile() {
   tmpfile=".tmp/$(date +%s).md"
   #concatenate all the files found with a pagebreak between each
   _concatenateFiles "$tmpfile"
-  # replace mermaid code blocks with images
   _cleanInputFile "$tmpfile"
+  # replace mermaid code blocks with images
   _preprocess_mermaid "$tmpfile"
+  # add extra line breaks to titles
+  echo "fixing line breaks"
+  fix_linebreaks "$tmpfile"
 }
 
 _buildReport() {
@@ -156,7 +169,7 @@ HEREDOC
 OPTIONS=hpwcs
 LONGOPTS=help,pdf,word,clean,silent
 
-! PARSED=$(getopt --options=$OPTIONS \
+PARSED=$(getopt --options=$OPTIONS \
   --longoptions=$LONGOPTS \
   --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
@@ -213,7 +226,7 @@ else
 fi
 
 main() {
-  trap _tidy EXIT # clear our .tmp dir on exit.
+  # trap _tidy EXIT # clear our .tmp dir on exit.
   if [ "$showHelp" = true ]; then
     # print help and nothing else...
     _print_help
