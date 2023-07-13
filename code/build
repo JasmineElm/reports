@@ -1,32 +1,34 @@
 #!/usr/bin/env bash
 
 set -u -e -o errtrace -o pipefail
-trap "echo ""Aborting due to errexit on line $LINENO. Exit code: $?"" >&2" ERR
+#trap "echo ""Aborting due to errexit on line $LINENO. Exit code: $?"" >&2" ERR
 IFS=$'\n\t'
 
 ######  VARIABLES    ###########################################
 
 _ME="$(basename "${0}")"
 _OUTDIR='output/'
-
+_SETUP=true
 # formatting
-bold=$(tput bold)
-normal=$(tput sgr0)
+_bold=$(tput bold)
+_normal=$(tput sgr0)
+_warn=$(tput setaf 3)
+_success=$(tput setaf 2)
 
 ######  FUNCTIONS    ###########################################
 _latestMarkdownDate() {
-  _LAST_MD_FILE=$(find . -type f -iwholename "./*.md" -printf '%T@ %p\n' \
-    | sort -n | tail -1 | cut -f2- -d" ")
+  _LAST_MD_FILE=$(find . -type f -iwholename "./*.md" -printf '%T@ %p\n' |
+    sort -n | tail -1 | cut -f2- -d" ")
   date -r "$_LAST_MD_FILE" "+%Y/%m/%d"
 }
 
 _updateMeta() {
   # update the date
-  _OLD_DATE=$(grep  "date: " meta.yaml | tr -cd '[:digit:]/')
+  _OLD_DATE=$(grep "date: " meta.yaml | tr -cd '[:digit:]/')
   #_NEW_DATE=$(date +%Y/%m/%d)
   _NEW_DATE=$(_latestMarkdownDate)
-  [[ $_OLD_DATE -eq $_NEW_DATE ]] || \
-  sed -i "s#$_OLD_DATE#$_NEW_DATE#" meta.yaml
+  [[ $_OLD_DATE -eq $_NEW_DATE ]] ||
+    sed -i "s#$_OLD_DATE#$_NEW_DATE#" meta.yaml
 }
 
 _countMarkdown() {
@@ -36,7 +38,7 @@ _countMarkdown() {
 _outFNFromMD() {
   input=$(find . -type f -iwholename "./*.md")
   output=$(basename -- "$input")
-  echo "${output%.*}"
+  #echo "${output%.*}"
 }
 
 _yamlLineMatches() {
@@ -45,8 +47,8 @@ _yamlLineMatches() {
 
 _outFNFromYaml() {
   # if it exists, use a sanitised "pdf-title" as the filename
-  grep -oP '(?<=pdf-title: \[).*(?=\])' meta.yaml \
-    |tr -d '\n' | tr -cs "[:alnum:]" "_"
+  grep -oP '(?<=pdf-title: \[).*(?=\])' meta.yaml |
+    tr -d '\n' | tr -cs "[:alnum:]" "_"
 }
 
 _outputFileName() {
@@ -65,15 +67,16 @@ _outputFileName() {
 
 _cleanInputFile() {
   # files should be utf8 anyway, but explicitly change it here...
- local input="$1"
- local temp="$1".utf8
-  iconv -c --verbose -t utf8 "$input" >"$temp" && \
-  mv "$temp" "$input"
+  local input="$1"
+  local temp="$1".utf8
+  iconv -c --verbose -t utf8 "$input" >"$temp" &&
+    mv "$temp" "$input"
 }
 
 _concatenateFiles() {
   # all files should have a pagebreak
-  printf "file order:\\n"
+  printf "%s$_success"
+  printf "%sFile order:$_normal\\n"
   for file in ./*.md; do
     (
       cat "${file}"
@@ -81,7 +84,7 @@ _concatenateFiles() {
       printf "\\pagebreak"
       printf "\\n"
     ) >>"$1"
-    printf "%s\\t$file\\n"
+    printf "%s$_success\\t$file $_normal\\n"
   done
   sed -i '$ d' "$1" #remove the last pagebreak that we added
 }
@@ -94,21 +97,22 @@ fix_linebreaks() {
 
 _preprocess_mermaid() {
   local infile="$1"
-  local outfile; outfile="${infile//.md/-mermaid.md}"
-  echo " preprocessing $infile -->  $outfile"
+  local outfile
+  outfile="${infile//.md/-mermaid.md}"
+  printf "%s$_warn* Preprocessing mermaid code blocks$_normal\\n"
   # replace mermaid code blocks with images
   npx -p @mermaid-js/mermaid-cli mmdc -i "$infile" -o "$outfile" \
     --outputFormat png \
     --backgroundColor transparent \
-    --theme neutral \
-    --quiet && \
-      mv "$outfile" "$infile"
+    --theme neutral &&
+    mv "$outfile" "$infile"
   # where we see links to ./*-mermaid*.png, prepend the the .tmp/ directory
   sed -i "s#(\./#(.tmp/#g" "$infile"
 }
 
 _makeInputFile() {
-  rm -rf .tmp && mkdir .tmp
+  printf "%s$_warn* Building input file...$_normal\\n"
+  _tidy && mkdir .tmp
   tmpfile=".tmp/$(date +%s).md"
   #concatenate all the files found with a pagebreak between each
   _concatenateFiles "$tmpfile"
@@ -116,7 +120,6 @@ _makeInputFile() {
   # replace mermaid code blocks with images
   _preprocess_mermaid "$tmpfile"
   # add extra line breaks to titles
-  echo "fixing line breaks"
   fix_linebreaks "$tmpfile"
 }
 
@@ -125,7 +128,7 @@ _buildReport() {
   local format="$1"
   logfile="$output.$format.log"
   if [ "$noLogFiles" = false ]; then
-    printf "%sbuilding $format...\\n  See $logfile for details\\n"
+    printf "%s$_warn* Building $format...$_normal\\n  See $logfile for details\\n"
   fi
   pandoc .tmp/*.md \
     --defaults=defaults.yaml \
@@ -140,11 +143,12 @@ _rmlogs() {
 }
 
 _clean() {
-  [ "$(ls -A output)" ] && rm -v output/* \
-    || printf "Already empty: nothing to do\\n"
+  [ "$(ls -A output)" ] && rm -v output/* ||
+    printf "Already empty: nothing to do\\n"
 }
 
 _tidy() {
+  printf "%s$_warn* Tidying up...$_normal\\n"
   rm -rf .tmp
 }
 
@@ -156,11 +160,11 @@ Usage:
   ${_ME} [BUILD OPTIONS]
 
 Build Options:
-  ${bold}-h | --help${normal}   Show this screen.
-  ${bold}-p | --pdf${normal}    build pdf
-  ${bold}-w | --word${normal}   build docx
-  ${bold}-c | --clean${normal}  clear the output directory
-  ${bold}-s | --silent${normal} remove any logs created
+  ${_bold}-h | --help${_normal}   Show this screen.
+  ${_bold}-p | --pdf${_normal}    build pdf
+  ${_bold}-w | --word${_normal}   build docx
+  ${_bold}-c | --clean${_normal}  clear the output directory
+  ${_bold}-s | --silent${_normal} remove any logs created
 HEREDOC
 }
 
@@ -192,41 +196,41 @@ if [ "$1" == '--' ]; then
 else
   while true; do
     case "$1" in
-      -p | --pdf)
-        formats_array+=("pdf")
-        makeInputFile=true
-        shift
-        ;;
-      -w | --word)
-        formats_array+=("docx")
-        makeInputFile=true
-        shift
-        ;;
-      -c | --clean)
-        clearOutput=true
-        shift
-        ;;
-      -s | --silent)
-        noLogFiles=true
-        shift
-        ;;
-      -h | --help)
-        showHelp=true
-        shift
-        ;;
-      --)
-        shift
-        break
-        ;;
-      *)
-        showHelp=true
-        ;;
+    -p | --pdf)
+      formats_array+=("pdf")
+      makeInputFile=true
+      shift
+      ;;
+    -w | --word)
+      formats_array+=("docx")
+      makeInputFile=true
+      shift
+      ;;
+    -c | --clean)
+      clearOutput=true
+      shift
+      ;;
+    -s | --silent)
+      noLogFiles=true
+      shift
+      ;;
+    -h | --help)
+      showHelp=true
+      shift
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      showHelp=true
+      ;;
     esac
   done
 fi
 
 main() {
-  # trap _tidy EXIT # clear our .tmp dir on exit.
+  trap _tidy EXIT # clear our .tmp dir on exit.
   if [ "$showHelp" = true ]; then
     # print help and nothing else...
     _print_help
@@ -237,6 +241,9 @@ main() {
       exit
     fi
     if [ $makeInputFile = true ]; then
+      if [ "$_SETUP" = true ]; then
+        ./config/setup
+      fi
       _makeInputFile
       _updateMeta
       output=$(_outputFileName)
