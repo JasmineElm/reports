@@ -7,6 +7,18 @@ _success=$(tput setaf 2)
 _normal=$(tput sgr0)
 _gh_base="https://raw.githubusercontent.com"
 _quiet=true
+_dependencies=( "curl" \
+                "texlive" \
+                "texlive-latex-extra" \
+                "texlive-fonts-recommended" \
+                "texlive-fonts-extra" \
+                "texlive-xetex" \
+                "nodejs" \
+                "npm" \
+                "librsvg2-bin" \
+                "jq"\
+                "iconv")
+
 ### FUNCTIONS ###
 #
 
@@ -69,29 +81,51 @@ _install_latest_pandoc() {
 
   if [ "$remote_version" \> "$installed_version"  ]; then
     printf "%s$_warn\tInstalling Pandoc $remote_version\n"
-    curl -s -L -o pandoc.deb "$url"
-    sudo apt install pandoc.deb "$(_quiet_apt)" && rm pandoc.deb
+    curl -s -L -o p/home/james/Dropbox/git/reportsandoc.deb "$url"
+    sudo apt install ./pandoc.deb "$(_quiet_apt)" && rm pandoc.deb
   else
-    printf "%s$_success\tPandoc $installed_version already installed\n"
+    printf "%s$_success\tPandoc $installed_version already installed\n$_normal"
   fi
 }
 
 _install_pagebreak_filter() {
-  [[ ! -f pagebreak.lua ]] && \
+  if [[ -f pagebreak.lua ]]; then
+    printf "%s$_success\tpagebreak.lua already installed...\n$_normal"
+  else
     curl -s -L -o pagebreak.lua \
   $_gh_base/pandoc-ext/pagebreak/main/pagebreak.lua
+  fi
+}
+
+_generate_default_docx_template() {
+  if [[ -f ../template/def.docx ]]; then
+    printf "%s$_success\tdef.docx already installed...\n$_normal"
+  else
+  pandoc -o ../template/def.docx --print-default-data-file reference.docx
+  fi
+}
+
+_install_latex_template() {
+  if [[   -f ../template/def.tex ]]; then
+    printf "%s$_success\tdef.tex already installed...\n$_normal"
+  else
+  curl -s -L -o ../template/def.tex \
+    $_gh_base/Wandmalfarbe/pandoc-latex-template/master/eisvogel.tex
+  fi
 }
 
 _install_templates() {
-  [[ ! -f ../template/def.tex ]] && \
-      curl -s -L -o ../template/def.tex \
-    $_gh_base/Wandmalfarbe/pandoc-latex-template/master/eisvogel.tex
+  _generate_default_docx_template
+  _install_latex_template
 }
 
 _install_csl() {
-  [[ ! -f ../template/def.csl ]] && \
+  if [[ ! -f ../template/def.csl ]]; then
+    printf "%s$_success\tdef.csl already installed...\n$_normal"
+  else
     curl -s -L -o ../template/def.csl \
     $_gh_base/citation-style-language/styles/master/harvard-cite-them-right.csl
+  fi
 }
 
 _clear_config() {
@@ -167,7 +201,10 @@ _main() {
   [[ $_all == true ]] && _binaries=true && _config=true
   if [[ $_binaries == true ]]; then
     printf "%s$_warn\nConsider running 'apt update' before running this script$_normal\n"
-    printf "%s$_warn\n* Installing dependencies... $_normal\n"
+    printf "%s$_warn\n* Checking dependencies... $_normal\n"
+    for dependency  in "${_DEPENDENCIES[@]}"; do
+      _install_package "$dependency"
+    done
     _install_package curl
     _install_package texlive
     _install_package texlive-latex-extra
@@ -180,9 +217,9 @@ _main() {
     _install_latest_pandoc
   fi
   if [[ $_config == true ]]; then
-    printf "%s$_warn\n* Installing filters... $_normal\n"
+    printf "%s$_warn\n* Checking filters... $_normal\n"
     _install_pagebreak_filter
-    printf "%s$_warn\n* Installing templates... $_normal\n"
+    printf "%s$_warn\n* Checking templates... $_normal\n"
     _install_templates
     _install_csl
   fi
