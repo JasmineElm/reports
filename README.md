@@ -35,12 +35,12 @@ Build Options:
 - [prettier](https://prettier.io/) can help automatically fix linting
   issues
 
-*Note:* You may want to drop this rep into a
-[cookiecutter](https://drivendata.github.io/cookiecutter-data-science/)
-project, replacing the blank `reports` directory.
-
 ## Some Notes on the Setup Script
 
 The setup script in [config](code/config/setup) intends to add sensible
-templates, and install the prerequisites on systems that use `apt`. If you want
-the binaries without the filters, templates and csl, you can run `./config/setup` then use the `cleanse_repo` script to remove the extra files.
+templates, and install the prerequisites on systems that use `apt`. If
+you want the binaries without the filters, templates and csl, you can
+run `./config/setup -e` then use the `cleanse_repo` script to remove the
+extra files.  By default, the build script will call setup each time it is run.
+This can be "switched off" by setting the "$_SETUP" variable in `build` to
+something other than `true`
