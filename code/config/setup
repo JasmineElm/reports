@@ -71,7 +71,7 @@ _get_version() {
 }
 
 _install_latest_pandoc() {
-  url=$(curl -s https://api.github.com/repos/jgm/pandoc/releases/latest \
+  rl=$(curl -s https://api.github.com/repos/jgm/pandoc/releases/latest \
     | grep "browser_download_url.*deb" \
     | cut -d : -f 2,3 \
     | tr -d \" \
@@ -81,7 +81,7 @@ _install_latest_pandoc() {
 
   if [ "$remote_version" \> "$installed_version"  ]; then
     printf "%s$_warn\tInstalling Pandoc $remote_version\n"
-    curl -s -L -o p/home/james/Dropbox/git/reportsandoc.deb "$url"
+    curl -sLo pandoc.deb "$url"
     sudo apt install ./pandoc.deb "$(_quiet_apt)" && rm pandoc.deb
   else
     printf "%s$_success\tPandoc $installed_version already installed\n$_normal"
