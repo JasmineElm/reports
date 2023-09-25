@@ -205,15 +205,6 @@ _main() {
     for dependency  in "${_DEPENDENCIES[@]}"; do
       _install_package "$dependency"
     done
-    _install_package curl
-    _install_package texlive
-    _install_package texlive-latex-extra
-    _install_package texlive-fonts-recommended
-    _install_package texlive-fonts-extra
-    _install_package texlive-xetex
-    _install_package nodejs
-    _install_package npm
-    _install_package librsvg2-bin
     _install_latest_pandoc
   fi
   if [[ $_config == true ]]; then
