@@ -25,10 +25,8 @@ _latestMarkdownDate() {
 _updateMeta() {
   # update the date
   _OLD_DATE=$(grep "date: " meta.yaml | tr -cd '[:digit:]/')
-  #_NEW_DATE=$(date +%Y/%m/%d)
   _NEW_DATE=$(_latestMarkdownDate)
-  [[ $_OLD_DATE -eq $_NEW_DATE ]] ||
-    sed -i "s#$_OLD_DATE#$_NEW_DATE#" meta.yaml
+  sed -i "s#$_OLD_DATE#$_NEW_DATE#" meta.yaml
 }
 
 _countMarkdown() {
