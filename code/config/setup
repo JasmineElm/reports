@@ -139,23 +139,7 @@ _get_default_docx_template() {
   pandoc -o ../template/def.docx --print-default-data-file reference.docx
   fi
 }
-_get_default_pptx_template() {
-  if [[ -f ../template/def.pptx ]]; then
-    printf "%s$_success\tdef.pptx already installed...\n$_normal"
-  else
-    printf "installing pptx\n"
-  pandoc -o ../template/def.pptx --print-default-data-file reference.pptx
-  fi
-}
 
-_get_default_slidy_template() {
-  if [[ -f ../template/slidy.html ]]; then
-    printf "%s$_success\tslidy.html already installed...\n$_normal"
-  else
-    printf "installing slidy\n"
-    pandoc -D slidy > ../template/slidy.html
-  fi
-}
 
 _install_latex_template() {
   # uses pandoc to create a default latex template, customise this to your needs
@@ -169,8 +153,6 @@ _install_latex_template() {
 
 _install_templates() {
   _get_default_docx_template
-  _get_default_pptx_template
-  _get_default_slidy_template
   _install_latex_template
 }
 
