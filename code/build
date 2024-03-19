@@ -93,19 +93,25 @@ fix_linebreaks() {
   sed -i -e 's/\(^#.*$\)/\n\n\1\n\n/g' "$1"
 }
 
+
 _preprocess_mermaid() {
   local infile="$1"
   local outfile
   outfile="${infile//.md/-mermaid.md}"
-  printf "%s$_warn* Preprocessing mermaid code blocks$_normal\\n"
-  # replace mermaid code blocks with images
-  npx -p @mermaid-js/mermaid-cli mmdc -i "$infile" -o "$outfile" \
-    --outputFormat png \
-    --backgroundColor transparent \
-    --theme neutral &&
-    mv "$outfile" "$infile"
-  # where we see links to ./*-mermaid*.png, prepend the the .tmp/ directory
-  sed -i "s#(\./#(.tmp/#g" "$infile"
+  # if we find mermaid code blocks, preprocess them
+  if grep -q '```mermaid' "$infile"; then
+    printf "%s$_warn* Preprocessing mermaid code blocks$_normal\\n"
+    # replace mermaid code blocks with images
+    npx -p @mermaid-js/mermaid-cli mmdc -i "$infile" -o "$outfile" \
+      --outputFormat png \
+      --backgroundColor transparent \
+      --theme neutral && \
+      mv "$outfile" "$infile"
+    # where we see links to ./*-mermaid*.png, prepend the the .tmp/ directory
+    sed -i "s#(\./#(.tmp/#g" "$infile"
+  else
+    printf "%s$_warn* No mermaid code blocks found$_normal\\n"
+  fi
 }
 
 _makeInputFile() {
@@ -136,12 +142,13 @@ _buildReport() {
 }
 
 _rmlogs() {
-  [ "$(find output/ -type f -iname '*.log')" ] && find output/ -type f -iname
-  '*.log' -delete || printf "Already empty: nothing to do\\n"
+  [ "$(find $_OUTDIR/ -type f -iname '*.log')" ] \
+    && find $_OUTDIR/ -type f -iname '*.log' -delete \
+    || printf "Already empty: nothing to do\\n"
 }
 
 _clean() {
-  [ "$(ls -A output)" ] && rm -v output/* ||
+  [ "$(ls -A $_OUTDIR)" ] && rm -v $_OUTDIR/* ||
     printf "Already empty: nothing to do\\n"
 }
 

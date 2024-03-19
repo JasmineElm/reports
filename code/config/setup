@@ -120,7 +120,7 @@ _install_templates() {
 }
 
 _install_csl() {
-  if [[ ! -f ../template/def.csl ]]; then
+  if [[ -f ../template/def.csl ]]; then
     printf "%s$_success\tdef.csl already installed...\n$_normal"
   else
     curl -s -L -o ../template/def.csl \
