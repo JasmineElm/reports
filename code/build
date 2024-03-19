@@ -136,12 +136,13 @@ _buildReport() {
 }
 
 _rmlogs() {
-  [ "$(find output/ -type f -iname '*.log')" ] && find output/ -type f -iname
-  '*.log' -delete || printf "Already empty: nothing to do\\n"
+  [ "$(find $_OUTDIR/ -type f -iname '*.log')" ] \
+    && find $_OUTDIR/ -type f -iname '*.log' -delete \
+    || printf "Already empty: nothing to do\\n"
 }
 
 _clean() {
-  [ "$(ls -A output)" ] && rm -v output/* ||
+  [ "$(ls -A $_OUTDIR)" ] && rm -v $_OUTDIR/* ||
     printf "Already empty: nothing to do\\n"
 }
 
