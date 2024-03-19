@@ -30,20 +30,23 @@ Build Options:
 ## Suggested third party applications
 
 - [Zotero](https://www.zotero.org) manages references
-- [vale-cli](https://github.com/errata-ai/vale) will call out bad
-  grammar.
-- [vim-wordy](
-- [prettier](https://prettier.io/) can help automatically fix linting
-  issues
+- [vale-cli](https://github.com/errata-ai/vale) will help with style
+- [vim-wordy](https://github.com/preservim/vim-wordy) will call out
+  bad grammar
+
 
 ## Some Notes on the Setup Script
 
-The setup script in [config](code/config/setup) adds sensible
-templates, and install the prerequisites on systems that use `apt`. If
+The setup script in [config](code/config/setup) copies global templates, installs a CSL style
+and checks, and installs the binaries required in the [build](code/build) script.  The
+script targets Debian, but should run on any system that uses `apt`.  Pandoc is
+picked up directly from the GitHub repo; the version in apt can be relatively
+old which I have found to be a problem.  
+
 you want the binaries without the filters, templates and csl, you can
-run `./config/setup -e` then use the `cleanse_repo` script to remove the
-extra files.  By default, the build script will call setup each time it is run.
-This can be "switched off" by setting the "$_SETUP" variable in `build` to
+run `./config/setup -b` *By default, the [build](code/build) script will call
+[setup](code/config/setup) each time it is run.* This can be "switched off" by
+setting the "$_SETUP" variable in `build` to
 something other than `true`
 
 ## Contributing
