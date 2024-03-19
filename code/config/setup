@@ -8,16 +8,10 @@ _normal=$(tput sgr0)
 _gh_base="https://raw.githubusercontent.com"
 _quiet=true
 _dependencies=( "curl" \
-                "texlive" \
-                "texlive-latex-extra" \
-                "texlive-fonts-recommended" \
-                "texlive-fonts-extra" \
-                "texlive-xetex" \
                 "nodejs" \
                 "npm" \
                 "librsvg2-bin" \
-                "jq"\
-                "iconv")
+                "jq")
 
 ### FUNCTIONS ###
 #
@@ -71,18 +65,17 @@ _get_version() {
 }
 
 _install_latest_pandoc() {
-  rl=$(curl -s https://api.github.com/repos/jgm/pandoc/releases/latest \
+  url=$(curl -s https://api.github.com/repos/jgm/pandoc/releases/latest \
     | grep "browser_download_url.*deb" \
     | cut -d : -f 2,3 \
     | tr -d \" \
-    | head -1)
+    | head -1 )
   remote_version="$(echo "$url" | cut -d / -f 8)"
   installed_version=$(_get_version pandoc)
-
   if [ "$remote_version" \> "$installed_version"  ]; then
     printf "%s$_warn\tInstalling Pandoc $remote_version\n"
-    curl -sLo pandoc.deb "$url"
-    sudo apt install ./pandoc.deb "$(_quiet_apt)" && rm pandoc.deb
+    curl -sLo  pandoc.deb "$url" && \
+    sudo dpkg -i  ./pandoc.deb && rm pandoc.deb
   else
     printf "%s$_success\tPandoc $installed_version already installed\n$_normal"
   fi
@@ -92,30 +85,92 @@ _install_pagebreak_filter() {
   if [[ -f pagebreak.lua ]]; then
     printf "%s$_success\tpagebreak.lua already installed...\n$_normal"
   else
+    printf "installing pagebreak\n"
     curl -s -L -o pagebreak.lua \
   $_gh_base/pandoc-ext/pagebreak/main/pagebreak.lua
   fi
 }
 
-_generate_default_docx_template() {
+_add_local_to_PATH() {
+  mkdir -p ~/.local/bin # tinyTex is symlinked here.
+  # test if ~/.local/bin is in the PATH
+  if [[ ":$PATH:" == *":$HOME/.local/bin:"* ]]; then
+    printf "%s$_success\t~/.local/bin is in the PATH\n$_normal"
+  else
+    printf "%s$_warn\tAdding ~/.local/bin to the PATH and ~/.profile\n$_normal"
+    echo "export PATH=$PATH:$HOME/.local/bin" >> ~/.profile
+  fi
+}
+
+_install_styles() {
+  # install latex styles - beats the multi-gigabyte texlive-full
+  printf "%s$_warn\tInstalling LaTex packages... $_normal\n"
+  tlmgr install colortbl setspace \
+        fvextra upquote lineno beamer \
+        footnotebackref koma-script \
+        soul pagecolor csquotes \
+        caption mdframed zref enumitem \
+        needspace sourcesanspro \
+        sourcecodepro titling bookmark
+}
+
+_install_tinyTex() {
+  # install tinyTex, key packages and add ~/.local/bin to the PATH
+  if [[ -d ~/.TinyTeX ]]; then
+    printf "%s$_success\tTinyTeX already installed...\n$_normal"
+    printf "%s$_warn\tUpdating if necessary... $_normal\n"
+    tlmgr update --self --all && \
+    tlmgr path add &&  \
+    fmtutil-sys --all && \
+    _install_styles
+  else
+    printf "installing TinyTex\n"
+   _add_local_to_PATH && \
+    curl -sL "https://yihui.org/tinytex/install-bin-unix.sh" | sh && \
+    _install_styles
+  fi
+}
+
+_get_default_docx_template() {
   if [[ -f ../template/def.docx ]]; then
     printf "%s$_success\tdef.docx already installed...\n$_normal"
   else
+    printf "installing docx\n"
   pandoc -o ../template/def.docx --print-default-data-file reference.docx
+  fi
+}
+_get_default_pptx_template() {
+  if [[ -f ../template/def.pptx ]]; then
+    printf "%s$_success\tdef.pptx already installed...\n$_normal"
+  else
+    printf "installing pptx\n"
+  pandoc -o ../template/def.pptx --print-default-data-file reference.pptx
+  fi
+}
+
+_get_default_slidy_template() {
+  if [[ -f ../template/slidy.html ]]; then
+    printf "%s$_success\tslidy.html already installed...\n$_normal"
+  else
+    printf "installing slidy\n"
+    pandoc -D slidy > ../template/slidy.html
   fi
 }
 
 _install_latex_template() {
+  # uses pandoc to create a default latex template, customise this to your needs
   if [[   -f ../template/def.tex ]]; then
     printf "%s$_success\tdef.tex already installed...\n$_normal"
   else
-  curl -s -L -o ../template/def.tex \
-    $_gh_base/Wandmalfarbe/pandoc-latex-template/master/eisvogel.tex
+    printf "installing latex\n"
+    pandoc -D latex > ../template/def.tex
   fi
 }
 
 _install_templates() {
-  _generate_default_docx_template
+  _get_default_docx_template
+  _get_default_pptx_template
+  _get_default_slidy_template
   _install_latex_template
 }
 
@@ -123,6 +178,7 @@ _install_csl() {
   if [[ -f ../template/def.csl ]]; then
     printf "%s$_success\tdef.csl already installed...\n$_normal"
   else
+    printf "installing csl\n"
     curl -s -L -o ../template/def.csl \
     $_gh_base/citation-style-language/styles/master/harvard-cite-them-right.csl
   fi
@@ -132,9 +188,9 @@ _clear_config() {
   # cd to the base of the repo
   cd "$(dirname "$0")/../../" || exit
   printf "%s$_warn\tClearing config... $_normal\n"
-  _FILES_TO_REMOVE=("def.csl" "def.tex" "*.log" "*.pdf" "*.deb" "*.lua")
+  _FILES_TO_REMOVE=("*.csl" "*.html" "*.docx" "def.tex" "*.log" "*.pdf" "*.deb" "*.lua")
   for file in "${_FILES_TO_REMOVE[@]}"; do
-    find . -name "$file" -type f -delete
+    find . -name "$file" -type f -delete -print
   done
   cd - >/dev/null || exit
 }
@@ -202,9 +258,10 @@ _main() {
   if [[ $_binaries == true ]]; then
     printf "%s$_warn\nConsider running 'apt update' before running this script$_normal\n"
     printf "%s$_warn\n* Checking dependencies... $_normal\n"
-    for dependency  in "${_DEPENDENCIES[@]}"; do
+    for dependency  in "${_dependencies[@]}"; do
       _install_package "$dependency"
     done
+    _install_tinyTex
     _install_latest_pandoc
   fi
   if [[ $_config == true ]]; then
