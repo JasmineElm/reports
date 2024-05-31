@@ -119,14 +119,13 @@ _install_tinyTex() {
   if [[ -d ~/.TinyTeX ]]; then
     printf "%s$_success\tTinyTeX already installed...\n$_normal"
     printf "%s$_warn\tUpdating if necessary... $_normal\n"
-    tlmgr update --self --all && \
-    tlmgr path add &&  \
-    fmtutil-sys --all && \
-    _install_styles
+    tlmgr update --self --all
   else
-    printf "installing TinyTex\n"
+    printf "%s$warn\tinstalling TinyTex\n"
    _add_local_to_PATH && \
     curl -sL "https://yihui.org/tinytex/install-bin-unix.sh" | sh && \
+    fmtutil-sys --all && \
+    tlmgr path add &&  \
     _install_styles
   fi
 }
