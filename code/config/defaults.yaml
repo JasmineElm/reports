@@ -2,11 +2,10 @@
 
 variables:
   language: [en-GB]
-metadata-file: meta.yaml
+metadata-file: config/meta.yaml
 citeproc: true
 pdf-engine: xelatex
 strip-comments: true
-template: template/def.tex
 reference-doc: template/def.docx
 bibliography: references.bib
 csl: template/def.csl
