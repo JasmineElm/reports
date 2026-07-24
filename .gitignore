@@ -10,3 +10,6 @@ cleanse_repo.sh
 *.vscode
 *.lua
 *.bak
+.DS_Store
+code/template/def.docx
+

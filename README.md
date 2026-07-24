@@ -35,26 +35,41 @@ Build Options:
   bad grammar
 
 
-## Some Notes on the Setup Script
+## Development Environment Setup
 
-The setup script in [config](code/config/setup) copies global templates, installs a CSL style
-and checks, and installs the binaries required in the [build](code/build) script.  The
-script targets Debian, but should run on any system that uses `apt`.  Pandoc is
-picked up directly from the GitHub repo; the version in apt can be relatively
-old which I have found to be a problem.  
+This project uses [Nix](https://nixos.org/) with flakes to manage dependencies reproducibly. The `flake.nix` provides a development shell that includes `pandoc`, a custom `texlive` environment with all required packages, `nodejs`, and `librsvg`.
 
-you want the binaries without the filters, templates and csl, you can
-run `./config/setup -b` *By default, the [build](code/build) script will call
-[setup](code/config/setup) each time it is run.* This can be "switched off" by
-setting the "$_SETUP" variable in `build` to
-something other than `true`
+To enter the development environment, run:
+
+```bash
+nix develop
+```
+
+Alternatively, you can use [direnv](https://direnv.net/) by creating a `.envrc` file containing `use flake`.
+
+The first time you enter the Nix environment, it will automatically download required global templates, a CSL style, and lua filters into the correct folders.
+
+## I just want to build the document
+
+The build script can be called via the nix develop shell
+
+```bash
+nix develop --command ./build -p -w
+```
+
+## Additional Parameters
+
+Additional configuration parameters can be found in
+[meta.yaml](code/config/meta.yaml), and [defaults.yaml]
+(code/config/defaults.yaml).  Meta.yaml defined document specific parameters,
+while default.yaml contains the paramteres used to build the documents.  You probbaly
+want to update meta.yaml.
 
 ## Contributing
 
 Please feel free to open an issue or a pull request. Though this is a personal
 project which I consider "feature complete", I welcome any suggestions for
-features and fixes.  I'be be especially interested in any suggestions for
-'nix-ifying' the setup script.
+features and fixes.
 
 If raising a **pull request**, please ensure that the code
 passes shellcheck and markdownlint. The code _must_ run on a fresh install of
@@ -69,12 +84,9 @@ The code in this repository is licensed under the MIT License. It does however
 rely on third party software, which may have different licenses.
 
 - [pandoc](https://pandoc.org/)
-- [tinytex](https://yihui.org/tinytex/)
 - [mermaid-js](https://mermaid-js.github.io/mermaid/)
-- [curl](https://curl.se/)
 - [nodejs](https://nodejs.org/)
 - [librsvg2-bin](https://wiki.gnome.org/Projects/LibRsvg)
-- [jq](https://stedolan.github.io/jq/)
 - the [cite them right](https://github.com/citation-style-language) CSL style
 - [pagebreak.lua](https://github.com/pandoc-ext/pagebreak) by Albert Krewinkel, Benct Philip Jonsson
 
@@ -100,3 +112,4 @@ Additionally, the following latex styles are used:
 - sourcecodepro
 - titling
 - bookmark
+- framed

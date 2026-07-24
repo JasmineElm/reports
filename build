@@ -4,11 +4,12 @@ set -u -e -o errtrace -o pipefail
 #trap "echo ""Aborting due to errexit on line $LINENO. Exit code: $?"" >&2" ERR
 IFS=$'\n\t'
 
+cd "$(dirname "$0")/code" || exit 1
+
 ######  VARIABLES    ###########################################
 
 _ME="$(basename "${0}")"
 _OUTDIR='output/'
-_SETUP=true
 # formatting
 _bold=$(tput bold)
 _normal=$(tput sgr0)
@@ -24,9 +25,9 @@ _latestMarkdownDate() {
 
 _updateMeta() {
   # update the date
-  _OLD_DATE=$(grep "date: " meta.yaml | tr -cd '[:digit:]/')
+  _OLD_DATE=$(grep "date: " config/meta.yaml | tr -cd '[:digit:]/')
   _NEW_DATE=$(_latestMarkdownDate)
-  sed -i "s#$_OLD_DATE#$_NEW_DATE#" meta.yaml
+  sed -i "s#$_OLD_DATE#$_NEW_DATE#" config/meta.yaml
 }
 
 _countMarkdown() {
@@ -36,16 +37,16 @@ _countMarkdown() {
 _outFNFromMD() {
   input=$(find . -type f -iwholename "./*.md")
   output=$(basename -- "$input")
-  #echo "${output%.*}"
+  echo "${output%.*}"
 }
 
 _yamlLineMatches() {
-  grep -c "pdf-title" meta.yaml
+  grep -c "pdf-title" config/meta.yaml
 }
 
 _outFNFromYaml() {
   # if it exists, use a sanitised "pdf-title" as the filename
-  grep -oP '(?<=pdf-title: \[).*(?=\])' meta.yaml |
+  grep -oP '(?<=pdf-title: \[).*(?=\])' config/meta.yaml |
     tr -d '\n' | tr -cs "[:alnum:]" "_"
 }
 
@@ -63,13 +64,7 @@ _outputFileName() {
   printf "%s$outFile"
 }
 
-_cleanInputFile() {
-  # files should be utf8 anyway, but explicitly change it here...
-  local input="$1"
-  local temp="$1".utf8
-  iconv -c --verbose -t utf8 "$input" >"$temp" &&
-    mv "$temp" "$input"
-}
+
 
 _concatenateFiles() {
   # all files should have a pagebreak
@@ -102,7 +97,7 @@ _preprocess_mermaid() {
   if grep -q '```mermaid' "$infile"; then
     printf "%s$_warn* Preprocessing mermaid code blocks$_normal\\n"
     # replace mermaid code blocks with images
-    npx -p @mermaid-js/mermaid-cli mmdc -i "$infile" -o "$outfile" \
+    mmdc -i "$infile" -o "$outfile" \
       --outputFormat png \
       --backgroundColor transparent \
       --theme neutral && \
@@ -120,7 +115,6 @@ _makeInputFile() {
   tmpfile=".tmp/$(date +%s).md"
   #concatenate all the files found with a pagebreak between each
   _concatenateFiles "$tmpfile"
-  _cleanInputFile "$tmpfile"
   # replace mermaid code blocks with images
   _preprocess_mermaid "$tmpfile"
   # add extra line breaks to titles
@@ -131,14 +125,28 @@ _buildReport() {
   [[ -d "$_OUTDIR" ]] || mkdir -p "$_OUTDIR"
   local format="$1"
   logfile="$output.$format.log"
-  if [ "$noLogFiles" = false ]; then
-    printf "%s$_warn* Building $format...$_normal\\n  See $logfile for details\\n"
+  
+  local extra_args=()
+  if [[ "$format" == "pdf" ]]; then
+    extra_args=(--template=template/def.tex)
   fi
+
+  printf "%s$_warn* Building $format...$_normal\\n"
+
   pandoc .tmp/*.md \
-    --defaults=defaults.yaml \
+    --defaults=config/defaults.yaml \
+    "${extra_args[@]}" \
     --output "$_OUTDIR$output.$format" \
-    --lua-filter=config/pagebreak.lua \
+    --lua-filter=template/pagebreak.lua \
     2>&1 | tee "$_OUTDIR$logfile"
+
+  if [ -s "$_OUTDIR$logfile" ]; then
+    if [ "$noLogFiles" = false ]; then
+      printf "  See %s for details\\n" "$logfile"
+    fi
+  else
+    rm -f "$_OUTDIR$logfile"
+  fi
 }
 
 _rmlogs() {
@@ -175,32 +183,19 @@ HEREDOC
 
 ###### OPTION PARSING ##########################################
 
-OPTIONS=hpwcs
-LONGOPTS=help,pdf,word,clean,silent
-
-PARSED=$(getopt --options=$OPTIONS \
-  --longoptions=$LONGOPTS \
-  --name "$0" -- "$@")
-if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
-  # e.g. return value is 1
-  #  then getopt has complained about wrong arguments to stdout
-  exit 2
-fi
-# read getopt’s output this way to handle the quoting right:
-eval set -- "$PARSED"
-
 clearOutput=false
 makeInputFile=false
 noLogFiles=false
 showHelp=false
-
 formats_array=()
-if [ "$1" == '--' ]; then
+
+if [[ $# -eq 0 ]]; then
   ## no options passed = help message
   showHelp=true
-else
-  while true; do
-    case "$1" in
+fi
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
     -p | --pdf)
       formats_array+=("pdf")
       makeInputFile=true
@@ -228,11 +223,12 @@ else
       break
       ;;
     *)
+      printf "Unknown option: %s\n" "$1" >&2
       showHelp=true
+      break
       ;;
-    esac
-  done
-fi
+  esac
+done
 
 main() {
   trap _tidy EXIT # clear our .tmp dir on exit.
@@ -246,9 +242,6 @@ main() {
       exit
     fi
     if [ $makeInputFile = true ]; then
-      if [ "$_SETUP" = true ]; then
-        ./config/setup
-      fi
       _makeInputFile
       _updateMeta
       output=$(_outputFileName)
